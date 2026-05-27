@@ -1,0 +1,746 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>JOH GRAPHICS - Student Portal</title>
+  
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+  
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Inter', sans-serif; background: #f5f7fb; color: #1e293b; overflow-x: hidden; }
+    .app-container { display: flex; min-height: 100vh; position: relative; }
+    .sidebar { width: 280px; background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%); border-right: 1px solid #e2e8f0; padding: 28px 20px; position: fixed; height: 100vh; overflow-y: auto; z-index: 1000; transition: transform 0.3s ease; }
+    @media (max-width: 768px) { .sidebar { transform: translateX(-100%); } .sidebar.open { transform: translateX(0); } }
+    .sidebar-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 999; backdrop-filter: blur(2px); }
+    .sidebar-overlay.active { display: block; }
+    @media (min-width: 769px) { .sidebar-overlay { display: none !important; } }
+    .sidebar-logo { margin-bottom: 40px; padding-bottom: 24px; border-bottom: 1px solid #e2e8f0; }
+    .sidebar-logo h1 { font-size: 22px; font-weight: 700; background: linear-gradient(135deg, #667eea, #764ba2); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+    .hamburger { display: none; position: fixed; top: 20px; left: 20px; z-index: 1001; background: white; border: none; width: 48px; height: 48px; border-radius: 12px; cursor: pointer; }
+    .hamburger span { display: block; width: 24px; height: 2px; background: #667eea; margin: 5px auto; }
+    @media (max-width: 768px) { .hamburger { display: block; } }
+    .nav-menu { display: flex; flex-direction: column; gap: 8px; }
+    .nav-item { display: flex; align-items: center; gap: 14px; padding: 14px 18px; border-radius: 14px; cursor: pointer; transition: all 0.3s; color: #64748b; font-weight: 500; }
+    .nav-item:hover { background: #f1f5f9; color: #667eea; }
+    .nav-item.active { background: linear-gradient(135deg, #667eea, #764ba2); color: white; }
+    .nav-icon { font-size: 20px; width: 28px; }
+    .user-profile { margin-top: auto; padding-top: 30px; border-top: 1px solid #e2e8f0; margin-top: 30px; }
+    .profile-card { display: flex; align-items: center; gap: 12px; padding: 12px; background: #f8fafc; border-radius: 16px; }
+    .profile-avatar { width: 44px; height: 44px; background: linear-gradient(135deg, #667eea, #764ba2); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; }
+    .profile-info { flex: 1; }
+    .profile-name { font-weight: 700; font-size: 14px; }
+    .profile-email { font-size: 11px; color: #94a3b8; }
+    .logout-sidebar-btn { width: 100%; margin-top: 12px; padding: 10px; background: #ef4444; color: white; border: none; border-radius: 12px; cursor: pointer; font-weight: 600; }
+    .main-content { flex: 1; margin-left: 280px; padding: 32px 40px; transition: margin-left 0.3s; }
+    @media (max-width: 768px) { .main-content { margin-left: 0; padding: 80px 20px 32px; } }
+    .welcome-header { margin-bottom: 32px; }
+    .welcome-header h1 { font-size: 28px; font-weight: 700; }
+    .welcome-header p { color: #64748b; margin-top: 6px; }
+    .card { background: white; border-radius: 24px; padding: 28px; margin-bottom: 28px; box-shadow: 0 4px 20px rgba(0,0,0,0.03); border: 1px solid #e2e8f0; }
+    .card h2 { font-size: 20px; font-weight: 600; margin-bottom: 20px; border-left: 4px solid #667eea; padding-left: 15px; }
+    
+    /* Search Bar Styles - Beautiful but NO ZOOMING */
+    .search-bar { margin-bottom: 20px; display: flex; gap: 10px; flex-wrap: wrap; }
+    .search-bar input { flex: 1; padding: 12px 16px; border: 2px solid #e2e8f0; border-radius: 14px; font-size: 14px; min-width: 200px; transition: all 0.2s; }
+    .search-bar input:focus { outline: none; border-color: #667eea; box-shadow: 0 0 0 3px rgba(102,126,234,0.1); }
+    .search-bar button { background: linear-gradient(135deg, #667eea, #764ba2); color: white; padding: 12px 28px; border: none; border-radius: 40px; cursor: pointer; font-weight: 600; font-size: 14px; transition: all 0.2s; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+    .search-bar button:hover { opacity: 0.9; box-shadow: 0 4px 10px rgba(102,126,234,0.2); transform: none; }
+    .clear-search { background: #64748b; }
+    .clear-search:hover { background: #475569; box-shadow: 0 4px 10px rgba(71,85,105,0.2); }
+    
+    .sub-banner { background: linear-gradient(135deg, #667eea, #764ba2); border-radius: 24px; padding: 40px; text-align: center; color: white; margin-bottom: 28px; }
+    .sub-banner h2 { font-size: 26px; margin-bottom: 12px; }
+    .sub-banner p { opacity: 0.9; margin-bottom: 24px; }
+    .contact-admin-btn { background: white; color: #667eea; padding: 12px 32px; border: none; border-radius: 40px; font-weight: 700; cursor: pointer; transition: all 0.2s; }
+    .contact-admin-btn:hover { opacity: 0.9; transform: none; }
+    .assignment-card, .exam-card, .submission-card { background: #fafbfe; border-radius: 20px; padding: 20px; margin-bottom: 16px; border: 1px solid #eef2f6; transition: all 0.2s; }
+    .assignment-card:hover, .exam-card:hover { border-color: #667eea; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
+    .assignment-title, .exam-title { font-size: 18px; font-weight: 700; margin-bottom: 8px; }
+    .assignment-desc { color: #64748b; margin-bottom: 12px; line-height: 1.5; }
+    .assignment-image { max-width: 100%; max-height: 200px; border-radius: 16px; margin: 12px 0; object-fit: cover; }
+    .assignment-meta { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; padding: 12px 0; border-top: 1px solid #e2e8f0; border-bottom: 1px solid #e2e8f0; margin: 12px 0; }
+    .due-date { display: flex; align-items: center; gap: 6px; color: #64748b; font-size: 13px; }
+    .status-badge { padding: 4px 12px; border-radius: 40px; font-size: 12px; font-weight: 600; }
+    .status-submitted { background: #d1fae5; color: #065f46; }
+    .status-pending { background: #fef3c7; color: #92400e; }
+    .upload-area { border: 2px dashed #cbd5e1; border-radius: 16px; padding: 20px; text-align: center; cursor: pointer; background: white; transition: all 0.2s; }
+    .upload-area:hover { border-color: #667eea; background: #f8fafc; }
+    .grade-badge { display: inline-block; padding: 6px 14px; border-radius: 40px; font-size: 13px; font-weight: 600; margin-top: 12px; }
+    .grade-pass { background: #10b981; color: white; }
+    .grade-pending { background: #e2e8f0; color: #475569; }
+    .take-exam-btn { background: linear-gradient(135deg, #667eea, #764ba2); color: white; padding: 10px 24px; border: none; border-radius: 40px; cursor: pointer; font-weight: 600; margin-top: 12px; transition: all 0.2s; }
+    .take-exam-btn:hover { opacity: 0.9; transform: none; box-shadow: 0 4px 12px rgba(102,126,234,0.3); }
+    .certificate-link { display: inline-block; background: #10b981; color: white; padding: 12px 28px; border-radius: 40px; text-decoration: none; font-weight: 600; transition: all 0.2s; }
+    .certificate-link:hover { opacity: 0.9; transform: none; }
+    .whatsapp-btn { background: #25D366; color: white; padding: 12px 28px; border-radius: 40px; text-decoration: none; display: inline-block; font-weight: 600; transition: all 0.2s; }
+    .whatsapp-btn:hover { opacity: 0.9; transform: none; }
+    .auth-container { min-height: 100vh; display: flex; align-items: center; justify-content: center; background: linear-gradient(145deg, #667eea, #764ba2); padding: 20px; }
+    .auth-card { background: white; border-radius: 32px; padding: 48px; width: 100%; max-width: 460px; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25); }
+    .auth-card h2 { font-size: 32px; font-weight: 700; text-align: center; margin-bottom: 32px; background: linear-gradient(135deg, #667eea, #764ba2); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+    .auth-card input { width: 100%; padding: 14px 18px; margin: 10px 0; border: 2px solid #e2e8f0; border-radius: 16px; font-size: 16px; }
+    .auth-card input:focus { outline: none; border-color: #667eea; }
+    .auth-card button { width: 100%; padding: 14px; background: linear-gradient(135deg, #667eea, #764ba2); color: white; border: none; border-radius: 16px; font-size: 16px; font-weight: 600; cursor: pointer; margin-top: 20px; transition: all 0.2s; }
+    .auth-card button:hover { opacity: 0.9; transform: none; }
+    .auth-card button:disabled { opacity: 0.7; cursor: not-allowed; }
+    .toggle-link { text-align: center; margin-top: 24px; color: #667eea; cursor: pointer; }
+    .error-msg { color: #ef4444; text-align: center; margin-top: 12px; }
+    .success-msg { color: #10b981; text-align: center; margin-top: 12px; }
+    .contact-admin-message { background: #fef3c7; border-left: 4px solid #f59e0b; padding: 15px; border-radius: 12px; margin-top: 15px; text-align: center; }
+    .loading-spinner { display: inline-block; width: 20px; height: 20px; border: 2px solid white; border-top-color: transparent; border-radius: 50%; animation: spin 0.8s linear infinite; margin-right: 8px; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .exam-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); backdrop-filter: blur(8px); z-index: 1002; overflow-y: auto; }
+    .exam-modal-content { background: white; max-width: 700px; margin: 50px auto; padding: 32px; border-radius: 32px; position: relative; animation: modalSlideIn 0.3s ease; }
+    @keyframes modalSlideIn { from { opacity: 0; transform: translateY(-30px); } to { opacity: 1; transform: translateY(0); } }
+    .close-exam { position: absolute; top: 20px; right: 24px; font-size: 28px; cursor: pointer; color: #94a3b8; }
+    .question-block { margin-bottom: 28px; padding: 20px; background: #f8fafc; border-radius: 20px; }
+    .option-label { display: block; padding: 10px 14px; margin: 6px 0; border: 2px solid #e2e8f0; border-radius: 12px; cursor: pointer; transition: all 0.2s; }
+    .option-label:hover { background: #e2e8f0; }
+    .option-input:checked + .option-label { background: linear-gradient(135deg, #667eea, #764ba2); color: white; border-color: #667eea; }
+    .option-input { display: none; }
+    .submit-exam-btn { background: #10b981; color: white; padding: 14px 28px; border: none; border-radius: 40px; font-weight: 700; font-size: 16px; width: 100%; cursor: pointer; transition: all 0.2s; }
+    .submit-exam-btn:hover { opacity: 0.9; transform: none; }
+    .timer-display { position: sticky; top: 20px; background: white; border-radius: 40px; padding: 10px 20px; margin-bottom: 20px; text-align: center; font-weight: bold; font-size: 18px; color: #1e293b; border: 2px solid #667eea; z-index: 10; }
+    .timer-warning { background: #fef3c7; border-color: #f59e0b; color: #92400e; }
+    .timer-critical { background: #fee2e2; border-color: #ef4444; color: #991b1b; animation: pulse 1s infinite; }
+    @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.7; } 100% { opacity: 1; } }
+    .no-results { text-align: center; padding: 40px; color: #64748b; }
+    @media (max-width: 480px) { .auth-card { padding: 32px 24px; margin: 20px; } .card { padding: 20px; } .sub-banner { padding: 28px; } .sub-banner h2 { font-size: 22px; } .welcome-header h1 { font-size: 22px; } .assignment-meta { flex-direction: column; gap: 10px; align-items: flex-start; } }
+  </style>
+</head>
+<body>
+  <button class="hamburger" id="hamburgerBtn"><span></span><span></span><span></span></button>
+
+  <div id="authSection" class="auth-container">
+    <div class="auth-card">
+      <h2 id="authTitle">Welcome Back</h2>
+      <input type="text" id="name" placeholder="Full Name" style="display:none">
+      <input type="email" id="email" placeholder="Email address">
+      <input type="password" id="password" placeholder="Password">
+      <button id="authBtn">Sign In</button>
+      <div class="toggle-link" id="toggleLink">Create an account →</div>
+      <div id="authMessage"></div>
+      <div id="contactAdminMsg" class="contact-admin-message" style="display: none;">
+        <p>📢 <strong>Registration is by Admin only</strong></p>
+        <p>Please contact your administrator to get your login credentials.</p>
+        <p id="adminContactEmail" style="margin-top: 8px;">📧 Email: <strong>loading...</strong></p>
+      </div>
+    </div>
+  </div>
+
+  <div id="dashboard" class="app-container" style="display:none;">
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+    
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-logo"><h1>🎨 JOH GRAPHICS</h1></div>
+      <nav class="nav-menu">
+        <div class="nav-item active" data-tab="assignments"><span class="nav-icon">📝</span><span>Assignments</span></div>
+        <div class="nav-item" data-tab="submissions"><span class="nav-icon">📤</span><span>My Submissions</span></div>
+        <div class="nav-item" data-tab="exams"><span class="nav-icon">📊</span><span>Exams</span></div>
+        <div class="nav-item" data-tab="certificate"><span class="nav-icon">🎓</span><span>Certificate</span></div>
+        <div class="nav-item" data-tab="support"><span class="nav-icon">💬</span><span>Support</span></div>
+      </nav>
+      <div class="user-profile">
+        <div class="profile-card"><div class="profile-avatar" id="sidebarAvatar">👤</div><div class="profile-info"><div class="profile-name" id="sidebarName">Loading...</div><div class="profile-email" id="sidebarEmail">student@example.com</div></div></div>
+        <button class="logout-sidebar-btn" id="sidebarLogoutBtn">Logout</button>
+      </div>
+    </aside>
+
+    <main class="main-content">
+      <div id="subscriptionCheck"></div>
+      <div id="subscribedContent" style="display:none;">
+        <div class="welcome-header"><h1 id="welcomeTitle">Welcome back, <span id="welcomeName">Student</span>!</h1><p>Stay on track with your learning journey</p></div>
+        
+        <!-- Assignments Panel with Search -->
+        <div id="assignmentsPanel" class="tab-panel">
+          <div class="card">
+            <h2>📋 Current Assignments</h2>
+            <div class="search-bar">
+              <input type="text" id="searchAssignments" placeholder="🔍 Search assignments by title or description...">
+              <button onclick="searchAssignments()">Search</button>
+              <button class="clear-search" onclick="clearAssignmentSearch()">Clear</button>
+            </div>
+            <div id="assignmentsList">Loading...</div>
+          </div>
+        </div>
+
+        <!-- Submissions Panel with Search -->
+        <div id="submissionsPanel" class="tab-panel" style="display:none;">
+          <div class="card">
+            <h2>📤 My Submissions</h2>
+            <div class="search-bar">
+              <input type="text" id="searchSubmissions" placeholder="🔍 Search submissions by assignment name...">
+              <button onclick="searchSubmissions()">Search</button>
+              <button class="clear-search" onclick="clearSubmissionSearch()">Clear</button>
+            </div>
+            <div id="submissionsList">Loading...</div>
+          </div>
+        </div>
+
+        <!-- Exams Panel with Search -->
+        <div id="examsPanel" class="tab-panel" style="display:none;">
+          <div class="card">
+            <h2>📝 Available Exams</h2>
+            <div class="search-bar">
+              <input type="text" id="searchExams" placeholder="🔍 Search exams by title...">
+              <button onclick="searchExams()">Search</button>
+              <button class="clear-search" onclick="clearExamSearch()">Clear</button>
+            </div>
+            <div id="examsList">Loading...</div>
+          </div>
+        </div>
+
+        <div id="certificatePanel" class="tab-panel" style="display:none;"><div class="card"><h2>🎓 Your Certificate</h2><div id="certificateArea">Loading...</div></div></div>
+        <div id="supportPanel" class="tab-panel" style="display:none;"><div class="card"><h2>💬 Support Center</h2><div id="contactInfo">Loading...</div></div></div>
+      </div>
+    </main>
+  </div>
+
+  <!-- Exam Modal with Timer -->
+  <div id="examModal" class="exam-modal">
+    <div class="exam-modal-content">
+      <span class="close-exam" onclick="closeExam()">&times;</span>
+      <div class="timer-display" id="timerDisplay">Loading...</div>
+      <h2 id="examTitle" style="margin-bottom: 20px;">Exam</h2>
+      <div id="examQuestions"></div>
+      <button class="submit-exam-btn" id="submitExamBtn" onclick="submitExam()">✅ Submit Exam</button>
+    </div>
+  </div>
+
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyDKz2APg912fZldKRN6Y9PColnKuHAOtK0",
+      authDomain: "sibao-9a1e8.firebaseapp.com",
+      databaseURL: "https://sibao-9a1e8-default-rtdb.firebaseio.com",
+      projectId: "sibao-9a1e8",
+      storageBucket: "sibao-9a1e8.firebasestorage.app",
+      messagingSenderId: "628980007050",
+      appId: "1:628980007050:web:cff19acf1785babcd72d73",
+      measurementId: "G-5BZ22ZY3P0"
+    };
+    
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+    const db = firebase.firestore();
+
+    let currentUser = null;
+    let currentUserData = null;
+    let currentExam = null;
+    let userAnswers = {};
+    let examTimer = null;
+    let timeRemaining = 0;
+    let examStartTime = null;
+    
+    // Store original data for searching
+    let allAssignments = [];
+    let allSubmissions = [];
+    let allExams = [];
+
+    const hamburger = document.getElementById('hamburgerBtn');
+    const sidebar = document.getElementById('sidebar');
+    const overlay = document.getElementById('sidebarOverlay');
+    function openSidebar() { sidebar.classList.add('open'); overlay.classList.add('active'); document.body.style.overflow = 'hidden'; }
+    function closeSidebar() { sidebar.classList.remove('open'); overlay.classList.remove('active'); document.body.style.overflow = ''; }
+    hamburger?.addEventListener('click', openSidebar);
+    overlay?.addEventListener('click', closeSidebar);
+
+    const navItems = document.querySelectorAll('.nav-item');
+    navItems.forEach(item => { item.addEventListener('click', () => { if (window.innerWidth <= 768) closeSidebar(); }); });
+
+    function initTabs() {
+      const tabs = document.querySelectorAll('.nav-item');
+      const panels = ['assignmentsPanel', 'submissionsPanel', 'examsPanel', 'certificatePanel', 'supportPanel'];
+      tabs.forEach((tab, index) => {
+        tab.addEventListener('click', () => {
+          tabs.forEach(t => t.classList.remove('active'));
+          tab.classList.add('active');
+          panels.forEach(panel => { const el = document.getElementById(panel); if (el) el.style.display = 'none'; });
+          document.getElementById(panels[index]).style.display = 'block';
+        });
+      });
+    }
+
+    function isSubscriptionExpired(userData) {
+      if (userData.isDisabled) return true;
+      if (!userData.isSubscribed) return true;
+      if (userData.subscriptionPlan === 'lifetime') return false;
+      if (userData.subscriptionExpiry) {
+        const expiryDate = userData.subscriptionExpiry.toDate ? userData.subscriptionExpiry.toDate() : new Date(userData.subscriptionExpiry);
+        return new Date() > expiryDate;
+      }
+      return false;
+    }
+
+    let examTabSwitchWarning = false;
+    function setupTabSwitchDetection() {
+      document.addEventListener('visibilitychange', function() {
+        if (document.hidden && currentExam && !examTabSwitchWarning) {
+          examTabSwitchWarning = true;
+          alert('⚠️ Warning: Switching tabs during exam is not allowed! Your exam will be auto-submitted if you switch again.');
+          
+          document.addEventListener('visibilitychange', function secondSwitch() {
+            if (document.hidden && currentExam) {
+              alert('❌ You switched tabs during the exam. Your exam has been auto-submitted.');
+              submitExam(true);
+              document.removeEventListener('visibilitychange', secondSwitch);
+            }
+          });
+          
+          setTimeout(() => { examTabSwitchWarning = false; }, 10000);
+        }
+      });
+    }
+
+    async function loadAdminContactForMessage() {
+      try {
+        const adminDoc = await db.collection('settings').doc('adminContact').get();
+        const adminEmail = adminDoc.data()?.email || 'admin@graphixpro.com';
+        document.getElementById('adminContactEmail').innerHTML = `📧 Email: <strong>${adminEmail}</strong>`;
+      } catch (error) {
+        document.getElementById('adminContactEmail').innerHTML = '📧 Email: admin@graphixpro.com';
+      }
+    }
+
+    auth.onAuthStateChanged(async (user) => {
+      if (user) {
+        currentUser = user;
+        try {
+          const userDoc = await db.collection('users').doc(user.uid).get();
+          
+          if (!userDoc.exists) {
+            alert('Account not fully set up. Please contact admin.');
+            await auth.signOut();
+            return;
+          }
+          
+          currentUserData = userDoc.data();
+          
+          if (currentUserData.isDisabled === true) {
+            alert('Your account has been disabled. Please contact admin for assistance.');
+            await auth.signOut();
+            return;
+          }
+          
+          const displayName = currentUserData.name || user.email.split('@')[0];
+          
+          document.getElementById('sidebarName').innerHTML = displayName;
+          document.getElementById('sidebarEmail').innerHTML = user.email;
+          document.getElementById('sidebarAvatar').innerHTML = displayName.charAt(0).toUpperCase();
+          document.getElementById('welcomeName').innerHTML = displayName;
+          
+          if (currentUserData?.role === 'admin') {
+            window.location.href = 'admin.html';
+          } else {
+            document.getElementById('authSection').style.display = 'none';
+            document.getElementById('dashboard').style.display = 'flex';
+            initTabs();
+            setupTabSwitchDetection();
+            checkSubscription();
+          }
+        } catch (error) { console.error("Auth error:", error); }
+      } else {
+        document.getElementById('authSection').style.display = 'flex';
+        document.getElementById('dashboard').style.display = 'none';
+        loadAdminContactForMessage();
+      }
+    });
+
+    let isLogin = true;
+    document.getElementById('toggleLink').addEventListener('click', () => {
+      isLogin = !isLogin;
+      const nameField = document.getElementById('name');
+      const authTitle = document.getElementById('authTitle');
+      const authBtn = document.getElementById('authBtn');
+      const contactMsg = document.getElementById('contactAdminMsg');
+      
+      if (isLogin) {
+        nameField.style.display = 'none';
+        authTitle.innerHTML = 'Welcome Back';
+        authBtn.innerHTML = 'Sign In';
+        document.getElementById('toggleLink').innerHTML = 'Create an account →';
+        contactMsg.style.display = 'none';
+      } else {
+        nameField.style.display = 'block';
+        authTitle.innerHTML = 'Registration Disabled';
+        authBtn.innerHTML = 'Request Access';
+        document.getElementById('toggleLink').innerHTML = '← Back to Login';
+        contactMsg.style.display = 'block';
+      }
+    });
+
+    document.getElementById('authBtn').addEventListener('click', async () => {
+      const email = document.getElementById('email').value;
+      const password = document.getElementById('password').value;
+      const messageDiv = document.getElementById('authMessage');
+      const authBtn = document.getElementById('authBtn');
+      const originalBtnText = authBtn.innerHTML;
+      
+      if (isLogin) {
+        if (!email || !password) {
+          messageDiv.innerHTML = '<div class="error-msg">Please fill in all fields</div>';
+          return;
+        }
+        
+        authBtn.innerHTML = '<span class="loading-spinner"></span> Signing in...';
+        authBtn.disabled = true;
+        
+        try {
+          await auth.signInWithEmailAndPassword(email, password);
+        } catch (error) {
+          authBtn.innerHTML = originalBtnText;
+          authBtn.disabled = false;
+          messageDiv.innerHTML = `<div class="error-msg">Invalid credentials. Please contact admin for access.</div>`;
+        }
+      } else {
+        messageDiv.innerHTML = `
+          <div class="contact-admin-message" style="background:#d1fae5; border-left-color:#10b981;">
+            <p>✅ <strong>Registration is by Admin only</strong></p>
+            <p>Please contact your administrator to get your login credentials.</p>
+          </div>
+        `;
+        document.getElementById('name').value = '';
+        document.getElementById('email').value = '';
+        document.getElementById('password').value = '';
+      }
+    });
+
+    document.getElementById('sidebarLogoutBtn')?.addEventListener('click', () => auth.signOut());
+
+    async function checkSubscription() {
+      try {
+        const userDoc = await db.collection('users').doc(currentUser.uid).get();
+        const userData = userDoc.data();
+        const expired = isSubscriptionExpired(userData);
+        
+        if (userData.isSubscribed && !expired && !userData.isDisabled) {
+          document.getElementById('subscriptionCheck').innerHTML = '';
+          document.getElementById('subscribedContent').style.display = 'block';
+          loadAllContent();
+        } else {
+          const adminDoc = await db.collection('settings').doc('adminContact').get();
+          const adminEmail = adminDoc.data()?.email || 'admin@graphixpro.com';
+          
+          let message = '';
+          if (expired) { message = 'Your subscription has expired. Please contact admin to renew.'; } 
+          else { message = 'Get access to all assignments, exams, certificates, and direct admin support'; }
+          
+          document.getElementById('subscriptionCheck').innerHTML = `
+            <div class="sub-banner">
+              <h2>${expired ? '⏰ Subscription Expired' : '🔒 Premium Content Locked'}</h2>
+              <p>${message}</p>
+              <button class="contact-admin-btn" id="contactAdminBtn">📧 Contact Admin to Renew</button>
+            </div>
+          `;
+          document.getElementById('contactAdminBtn')?.addEventListener('click', () => {
+            window.location.href = `mailto:${adminEmail}?subject=Subscription%20Renewal%20Request&body=Hello Admin,%0A%0AI would like to renew my subscription.%0A%0AMy Email: ${currentUser.email}%0A%0AThank you.`;
+          });
+          document.getElementById('subscribedContent').style.display = 'none';
+        }
+      } catch (error) { console.error("Subscription error:", error); }
+    }
+
+    async function loadAllContent() {
+      await loadAssignments();
+      await loadSubmissions();
+      await loadExams();
+      await loadCertificate();
+      await loadContactInfo();
+    }
+
+    // ========== ASSIGNMENT FUNCTIONS WITH SEARCH ==========
+    async function loadAssignments() {
+      try {
+        const snapshot = await db.collection('assignments').orderBy('createdAt', 'desc').get();
+        allAssignments = [];
+        const container = document.getElementById('assignmentsList');
+        if (snapshot.empty) { container.innerHTML = '<p style="text-align:center; padding:40px;">📭 No assignments yet</p>'; return; }
+        
+        for (const doc of snapshot.docs) {
+          const assign = doc.data();
+          assign.id = doc.id;
+          const submissions = await db.collection('submissions').where('userId', '==', currentUser.uid).where('assignmentId', '==', doc.id).get();
+          assign.hasSubmitted = !submissions.empty;
+          allAssignments.push(assign);
+        }
+        renderAssignments(allAssignments);
+      } catch (error) { console.error("Error:", error); }
+    }
+    
+    function renderAssignments(assignments) {
+      const container = document.getElementById('assignmentsList');
+      if (assignments.length === 0) {
+        container.innerHTML = '<p class="no-results">🔍 No matching assignments found</p>';
+        return;
+      }
+      container.innerHTML = '';
+      for (const assign of assignments) {
+        let dueDateText = 'No deadline';
+        if (assign.dueDate) {
+          try { if (assign.dueDate.toDate) dueDateText = assign.dueDate.toDate().toLocaleDateString(); } catch(e) {}
+        }
+        let imageHtml = assign.imageBase64 ? `<img src="${assign.imageBase64}" class="assignment-image">` : '';
+        container.innerHTML += `<div class="assignment-card"><div class="assignment-title">📌 ${assign.title || 'Untitled'}</div><div class="assignment-desc">${assign.description || 'No description'}</div>${imageHtml}<div class="assignment-meta"><div class="due-date">📅 Due: ${dueDateText}</div>${assign.hasSubmitted ? '<span class="status-badge status-submitted">✓ Submitted</span>' : '<span class="status-badge status-pending">⏳ Pending</span>'}</div>${!assign.hasSubmitted ? `<div class="upload-area" onclick="document.getElementById('file-${assign.id}').click()">📎 Click to upload your work<input type="file" id="file-${assign.id}" style="display:none" accept="image/*,.pdf,.zip" onchange="submitAssignmentBase64('${assign.id}', this)"></div>` : ''}</div>`;
+      }
+    }
+    
+    window.searchAssignments = () => {
+      const searchTerm = document.getElementById('searchAssignments').value.toLowerCase();
+      if (!searchTerm) { renderAssignments(allAssignments); return; }
+      const filtered = allAssignments.filter(a => 
+        (a.title && a.title.toLowerCase().includes(searchTerm)) || 
+        (a.description && a.description.toLowerCase().includes(searchTerm))
+      );
+      renderAssignments(filtered);
+    };
+    
+    window.clearAssignmentSearch = () => {
+      document.getElementById('searchAssignments').value = '';
+      renderAssignments(allAssignments);
+    };
+
+    window.submitAssignmentBase64 = async (assignmentId, fileInput) => {
+      const file = fileInput.files[0];
+      if (!file) return;
+      if (file.size > 5 * 1024 * 1024) { alert('File too large! Max 5MB'); fileInput.value = ''; return; }
+      const uploadArea = fileInput.parentElement;
+      const originalText = uploadArea.innerHTML;
+      uploadArea.innerHTML = '⏳ Uploading...';
+      try {
+        const base64String = await new Promise((resolve, reject) => { const reader = new FileReader(); reader.onload = () => resolve(reader.result); reader.onerror = reject; reader.readAsDataURL(file); });
+        await db.collection('submissions').add({ userId: currentUser.uid, assignmentId: assignmentId, fileBase64: base64String, fileName: file.name, submittedAt: new Date(), grade: null, feedback: null });
+        alert('✅ Assignment submitted!');
+        location.reload();
+      } catch (error) { uploadArea.innerHTML = originalText; alert('❌ Upload failed: ' + error.message); }
+    };
+
+    // ========== SUBMISSION FUNCTIONS WITH SEARCH ==========
+    async function loadSubmissions() {
+      try {
+        const snapshot = await db.collection('submissions').where('userId', '==', currentUser.uid).orderBy('submittedAt', 'desc').get();
+        allSubmissions = [];
+        const container = document.getElementById('submissionsList');
+        if (snapshot.empty) { container.innerHTML = '<p style="text-align:center; padding:40px;">📭 No submissions yet</p>'; return; }
+        
+        for (const doc of snapshot.docs) {
+          const sub = doc.data();
+          sub.id = doc.id;
+          let assignmentTitle = 'Unknown';
+          try { const assignment = await db.collection('assignments').doc(sub.assignmentId).get(); if (assignment.exists) assignmentTitle = assignment.data().title; } catch(e) {}
+          sub.assignmentTitle = assignmentTitle;
+          allSubmissions.push(sub);
+        }
+        renderSubmissions(allSubmissions);
+      } catch (error) { console.error("Error:", error); }
+    }
+    
+    function renderSubmissions(submissions) {
+      const container = document.getElementById('submissionsList');
+      if (submissions.length === 0) {
+        container.innerHTML = '<p class="no-results">🔍 No matching submissions found</p>';
+        return;
+      }
+      container.innerHTML = '';
+      for (const sub of submissions) {
+        const submittedDate = sub.submittedAt?.toDate ? sub.submittedAt.toDate() : new Date();
+        container.innerHTML += `<div class="submission-card"><div class="assignment-title">📌 ${sub.assignmentTitle}</div><a href="${sub.fileBase64}" target="_blank" style="color:#667eea;">📎 ${sub.fileName}</a><div class="assignment-meta">📅 Submitted: ${submittedDate.toLocaleString()}</div>${sub.grade ? `<div class="grade-badge grade-pass">⭐ Grade: ${sub.grade}/100</div>` : '<div class="grade-badge grade-pending">⏳ Awaiting Grading</div>'}${sub.feedback ? `<p><strong>💬 Feedback:</strong> ${sub.feedback}</p>` : ''}</div>`;
+      }
+    }
+    
+    window.searchSubmissions = () => {
+      const searchTerm = document.getElementById('searchSubmissions').value.toLowerCase();
+      if (!searchTerm) { renderSubmissions(allSubmissions); return; }
+      const filtered = allSubmissions.filter(s => s.assignmentTitle && s.assignmentTitle.toLowerCase().includes(searchTerm));
+      renderSubmissions(filtered);
+    };
+    
+    window.clearSubmissionSearch = () => {
+      document.getElementById('searchSubmissions').value = '';
+      renderSubmissions(allSubmissions);
+    };
+
+    // ========== EXAM FUNCTIONS WITH SEARCH ==========
+    async function loadExams() {
+      try {
+        const snapshot = await db.collection('exams').orderBy('createdAt', 'desc').get();
+        const userDoc = await db.collection('users').doc(currentUser.uid).get();
+        const userScores = userDoc.data()?.examScores || {};
+        allExams = [];
+        const container = document.getElementById('examsList');
+        if (snapshot.empty) { container.innerHTML = '<p style="text-align:center; padding:40px;">📭 No exams available</p>'; return; }
+        
+        snapshot.forEach(doc => {
+          const exam = doc.data();
+          exam.id = doc.id;
+          exam.score = userScores[doc.id];
+          allExams.push(exam);
+        });
+        renderExams(allExams);
+      } catch (error) { console.error("Error:", error); }
+    }
+    
+    function renderExams(exams) {
+      const container = document.getElementById('examsList');
+      if (exams.length === 0) {
+        container.innerHTML = '<p class="no-results">🔍 No matching exams found</p>';
+        return;
+      }
+      container.innerHTML = '';
+      for (const exam of exams) {
+        const timeLimitText = exam.timeLimit ? `⏰ Time Limit: ${exam.timeLimit} minutes` : '⏰ No time limit';
+        container.innerHTML += `<div class="exam-card"><div class="exam-title">📝 ${exam.title}</div><div class="assignment-desc">${exam.description || 'No description'}</div><div class="assignment-meta">📋 ${exam.questions?.length || 0} questions | ${timeLimitText} | ✅ Passing: ${exam.passingScore || 70}%</div><button class="take-exam-btn" onclick="startExam('${exam.id}')">✍️ Take Exam →</button>${exam.score !== undefined ? `<div class="grade-badge grade-pass">✅ Score: ${exam.score}/100</div>` : '<div class="grade-badge grade-pending">📋 Not taken</div>'}</div>`;
+      }
+    }
+    
+    window.searchExams = () => {
+      const searchTerm = document.getElementById('searchExams').value.toLowerCase();
+      if (!searchTerm) { renderExams(allExams); return; }
+      const filtered = allExams.filter(e => e.title && e.title.toLowerCase().includes(searchTerm));
+      renderExams(filtered);
+    };
+    
+    window.clearExamSearch = () => {
+      document.getElementById('searchExams').value = '';
+      renderExams(allExams);
+    };
+
+    // Timer function
+    function startTimer(minutes) {
+      if (examTimer) clearInterval(examTimer);
+      timeRemaining = minutes * 60;
+      updateTimerDisplay();
+      
+      examTimer = setInterval(() => {
+        if (timeRemaining <= 0) {
+          clearInterval(examTimer);
+          document.getElementById('timerDisplay').innerHTML = "⏰ Time's Up! Submitting...";
+          alert('Time is up! Your exam is being submitted.');
+          submitExam(true);
+        } else {
+          timeRemaining--;
+          updateTimerDisplay();
+        }
+      }, 1000);
+    }
+    
+    function updateTimerDisplay() {
+      const minutes = Math.floor(timeRemaining / 60);
+      const seconds = timeRemaining % 60;
+      const timerDiv = document.getElementById('timerDisplay');
+      timerDiv.innerHTML = `⏱️ Time Remaining: ${minutes}:${seconds.toString().padStart(2, '0')}`;
+      
+      if (timeRemaining < 60) {
+        timerDiv.classList.add('timer-critical');
+        timerDiv.classList.remove('timer-warning');
+      } else if (timeRemaining < 300) {
+        timerDiv.classList.add('timer-warning');
+        timerDiv.classList.remove('timer-critical');
+      } else {
+        timerDiv.classList.remove('timer-warning', 'timer-critical');
+      }
+    }
+
+    window.startExam = async (examId) => {
+      try {
+        const examDoc = await db.collection('exams').doc(examId).get();
+        const exam = examDoc.data();
+        if (!exam || !exam.questions) { alert('Exam not found!'); return; }
+        
+        const userDoc = await db.collection('users').doc(currentUser.uid).get();
+        if (userDoc.data()?.examScores?.[examId] !== undefined) {
+          alert('You have already taken this exam!');
+          return;
+        }
+        
+        currentExam = { id: examId, title: exam.title, questions: exam.questions, passingScore: exam.passingScore, timeLimit: exam.timeLimit || 0 };
+        userAnswers = {};
+        examStartTime = Date.now();
+        
+        document.getElementById('examTitle').innerHTML = exam.title;
+        const container = document.getElementById('examQuestions');
+        container.innerHTML = '';
+        
+        exam.questions.forEach((q, index) => {
+          container.innerHTML += `
+            <div class="question-block">
+              <h4>${index + 1}. ${q.text}</h4>
+              <div>
+                <input type="radio" name="q${index}" id="q${index}_A" value="A" class="option-input" onchange="saveAnswer(${index}, 'A')">
+                <label for="q${index}_A" class="option-label">🅰️ ${q.options.A}</label>
+                <input type="radio" name="q${index}" id="q${index}_B" value="B" class="option-input" onchange="saveAnswer(${index}, 'B')">
+                <label for="q${index}_B" class="option-label">🅱️ ${q.options.B}</label>
+                <input type="radio" name="q${index}" id="q${index}_C" value="C" class="option-input" onchange="saveAnswer(${index}, 'C')">
+                <label for="q${index}_C" class="option-label">🅲 ${q.options.C}</label>
+                <input type="radio" name="q${index}" id="q${index}_D" value="D" class="option-input" onchange="saveAnswer(${index}, 'D')">
+                <label for="q${index}_D" class="option-label">🅳 ${q.options.D}</label>
+              </div>
+            </div>
+          `;
+        });
+        
+        if (exam.timeLimit && exam.timeLimit > 0) { startTimer(exam.timeLimit); } 
+        else { document.getElementById('timerDisplay').innerHTML = "⏱️ No time limit"; }
+        
+        document.getElementById('examModal').style.display = 'block';
+        examTabSwitchWarning = false;
+        
+      } catch (error) { alert('Error starting exam: ' + error.message); }
+    };
+    
+    window.saveAnswer = (index, answer) => { userAnswers[index] = answer; };
+    
+    window.closeExam = () => { 
+      if (examTimer) clearInterval(examTimer);
+      document.getElementById('examModal').style.display = 'none'; 
+      currentExam = null; 
+      userAnswers = {}; 
+    };
+    
+    window.submitExam = async (isAutoSubmit = false) => {
+      if (!currentExam) return;
+      if (examTimer) clearInterval(examTimer);
+      
+      let correct = 0;
+      currentExam.questions.forEach((q, i) => { if (userAnswers[i] === q.correctAnswer) correct++; });
+      const score = Math.round((correct / currentExam.questions.length) * 100);
+      const timeTaken = Math.round((Date.now() - examStartTime) / 60000);
+      
+      const userDoc = await db.collection('users').doc(currentUser.uid).get();
+      const examScores = userDoc.data()?.examScores || {};
+      const examResponses = userDoc.data()?.examResponses || {};
+      
+      examScores[currentExam.id] = score;
+      examResponses[currentExam.id] = { answers: userAnswers, timeTaken: timeTaken, completedAt: new Date(), autoSubmitted: isAutoSubmit };
+      
+      await db.collection('users').doc(currentUser.uid).update({ examScores, examResponses });
+      
+      alert(`✅ Exam submitted!\n\nScore: ${score}%\nCorrect: ${correct}/${currentExam.questions.length}\nTime taken: ${timeTaken} minutes${isAutoSubmit ? '\n(Exam was auto-submitted)' : ''}`);
+      closeExam();
+      location.reload();
+    };
+
+    async function loadCertificate() {
+      try {
+        const userDoc = await db.collection('users').doc(currentUser.uid).get();
+        const certificateUrl = userDoc.data()?.certificateUrl;
+        const container = document.getElementById('certificateArea');
+        if (certificateUrl) { container.innerHTML = `<div style="text-align:center;"><h3>🎉 Congratulations!</h3><a href="${certificateUrl}" target="_blank" class="certificate-link">📜 View Certificate</a></div>`; }
+        else { container.innerHTML = `<div style="text-align:center; color:#64748b;"><h3>🔒 No Certificate Yet</h3><p>Complete all assignments and exams to earn your certificate</p></div>`; }
+      } catch (error) { console.error("Error:", error); }
+    }
+
+    async function loadContactInfo() {
+      try {
+        const adminDoc = await db.collection('settings').doc('adminContact').get();
+        const whatsappDoc = await db.collection('settings').doc('whatsappGroup').get();
+        const adminEmail = adminDoc.data()?.email || 'admin@graphixpro.com';
+        const whatsappLink = whatsappDoc.data()?.link || '';
+        document.getElementById('contactInfo').innerHTML = `<div style="padding:20px;"><h3>📧 Admin Support</h3><p style="margin:15px 0;">Need help? Send an email to our admin team:</p><p><strong style="color:#667eea; font-size:18px;">${adminEmail}</strong></p><button class="take-exam-btn" id="emailSupportBtn" style="background:#667eea;">📧 Send Email</button>${whatsappLink ? `<div style="margin-top:30px;"><h3>💬 WhatsApp Community</h3><a href="${whatsappLink}" target="_blank" class="whatsapp-btn">Join WhatsApp Group →</a></div>` : ''}<div style="margin-top:30px; padding-top:20px; border-top:1px solid #e2e8f0;"><h3>⏰ Support Hours</h3><p>Mon-Fri: 9AM - 6PM<br>Sat: 10AM - 2PM</p></div></div>`;
+        document.getElementById('emailSupportBtn')?.addEventListener('click', () => { window.location.href = `mailto:${adminEmail}?subject=GraphixPro%20Support%20Request`; });
+      } catch (error) { console.error("Error:", error); }
+    }
+  </script>
+</body>
+</html>

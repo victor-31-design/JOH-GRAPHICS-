@@ -1,0 +1,1195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>JOH GRAPHICS - Learn Graphic Design Online</title>
+  
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+  
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #f5f7fb;
+      color: #1e293b;
+      overflow-x: hidden;
+    }
+
+    /* Custom Scrollbar */
+    ::-webkit-scrollbar { width: 8px; }
+    ::-webkit-scrollbar-track { background: #e2e8f0; }
+    ::-webkit-scrollbar-thumb { background: linear-gradient(135deg, #667eea, #764ba2); border-radius: 10px; }
+
+    /* Navigation */
+    .navbar {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      background: rgba(255, 255, 255, 0.98);
+      backdrop-filter: blur(20px);
+      z-index: 1000;
+      padding: 18px 60px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 20px;
+      box-shadow: 0 2px 20px rgba(0, 0, 0, 0.05);
+    }
+
+    .logo {
+      font-size: 28px;
+      font-weight: 800;
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .nav-links {
+      display: flex;
+      gap: 40px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    .nav-links a {
+      text-decoration: none;
+      color: #475569;
+      font-weight: 500;
+      transition: color 0.2s;
+    }
+
+    .nav-links a:hover {
+      color: #667eea;
+    }
+
+    /* Hero Section */
+    .hero {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 140px 60px 80px;
+      gap: 60px;
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+
+    .hero-content {
+      flex: 1;
+    }
+
+    .hero-content h1 {
+      font-size: 56px;
+      font-weight: 800;
+      line-height: 1.2;
+      background: linear-gradient(135deg, #1e293b, #667eea);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin-bottom: 24px;
+    }
+
+    .hero-content p {
+      font-size: 18px;
+      color: #64748b;
+      line-height: 1.6;
+      margin-bottom: 32px;
+      max-width: 500px;
+    }
+
+    .hero-buttons {
+      display: flex;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      color: white;
+      padding: 14px 36px;
+      border-radius: 40px;
+      text-decoration: none;
+      font-weight: 600;
+      transition: all 0.2s;
+      display: inline-block;
+      box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+    }
+
+    .btn-primary:hover {
+      opacity: 0.9;
+      transform: translateY(-2px);
+      box-shadow: 0 8px 20px rgba(102, 126, 234, 0.4);
+    }
+
+    .btn-secondary {
+      background: white;
+      color: #667eea;
+      padding: 14px 36px;
+      border-radius: 40px;
+      text-decoration: none;
+      font-weight: 600;
+      transition: all 0.2s;
+      display: inline-block;
+      border: 2px solid #e2e8f0;
+    }
+
+    .btn-secondary:hover {
+      border-color: #667eea;
+      transform: translateY(-2px);
+    }
+
+    .hero-image {
+      flex: 1;
+      text-align: center;
+    }
+
+    .hero-image svg {
+      width: 100%;
+      max-width: 500px;
+      height: auto;
+      animation: float 4s ease-in-out infinite;
+      border-radius: 20px;
+    }
+
+    @keyframes float {
+      0%, 100% { transform: translateY(0px); }
+      50% { transform: translateY(-15px); }
+    }
+
+    /* Features Section */
+    .features {
+      padding: 80px 60px;
+      background: white;
+    }
+
+    .section-header {
+      text-align: center;
+      margin-bottom: 60px;
+      max-width: 800px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+
+    .section-header h2 {
+      font-size: 40px;
+      font-weight: 700;
+      margin-bottom: 16px;
+    }
+
+    .section-header p {
+      color: #64748b;
+      font-size: 18px;
+    }
+
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 32px;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    .feature-card {
+      background: #f8fafc;
+      border-radius: 28px;
+      padding: 32px;
+      text-align: center;
+      transition: all 0.3s;
+      border: 1px solid #eef2f6;
+    }
+
+    .feature-card:hover {
+      transform: translateY(-8px);
+      border-color: #667eea;
+      box-shadow: 0 20px 30px -12px rgba(0, 0, 0, 0.1);
+    }
+
+    .feature-icon {
+      font-size: 48px;
+      margin-bottom: 20px;
+    }
+
+    .feature-card h3 {
+      font-size: 22px;
+      font-weight: 700;
+      margin-bottom: 12px;
+    }
+
+    .feature-card p {
+      color: #64748b;
+      line-height: 1.5;
+    }
+
+    /* How It Works Section */
+    .how-it-works {
+      padding: 80px 60px;
+      background: linear-gradient(145deg, #f8fafc, #ffffff);
+    }
+
+    .steps-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 32px;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    .step-card {
+      text-align: center;
+      padding: 24px;
+    }
+
+    .step-number {
+      width: 60px;
+      height: 60px;
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      color: white;
+      font-size: 28px;
+      font-weight: 700;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 20px;
+    }
+
+    .step-card h3 {
+      font-size: 20px;
+      font-weight: 700;
+      margin-bottom: 12px;
+    }
+
+    .step-card p {
+      color: #64748b;
+    }
+
+    /* Pricing Section */
+    .pricing {
+      padding: 80px 60px;
+      background: white;
+    }
+
+    .pricing-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 32px;
+      max-width: 1100px;
+      margin: 0 auto;
+    }
+
+    .pricing-card {
+      background: #f8fafc;
+      border-radius: 28px;
+      padding: 40px 32px;
+      text-align: center;
+      transition: all 0.3s;
+      border: 1px solid #eef2f6;
+      position: relative;
+    }
+
+    .pricing-card.popular {
+      border: 2px solid #667eea;
+      transform: scale(1.02);
+      background: white;
+    }
+
+    .popular-badge {
+      position: absolute;
+      top: -12px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      color: white;
+      padding: 6px 20px;
+      border-radius: 40px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+
+    .pricing-card h3 {
+      font-size: 24px;
+      font-weight: 700;
+      margin-bottom: 16px;
+    }
+
+    .price {
+      font-size: 48px;
+      font-weight: 800;
+      color: #1e293b;
+      margin-bottom: 20px;
+    }
+
+    .price span {
+      font-size: 16px;
+      font-weight: 400;
+      color: #64748b;
+    }
+
+    .pricing-card ul {
+      list-style: none;
+      margin-bottom: 32px;
+    }
+
+    .pricing-card li {
+      padding: 8px 0;
+      color: #475569;
+    }
+
+    .pricing-card li::before {
+      content: "✓";
+      color: #10b981;
+      margin-right: 8px;
+      font-weight: bold;
+    }
+
+    .pricing-btn {
+      background: white;
+      color: #667eea;
+      border: 2px solid #e2e8f0;
+      padding: 12px 32px;
+      border-radius: 40px;
+      text-decoration: none;
+      font-weight: 600;
+      display: inline-block;
+      transition: all 0.2s;
+    }
+
+    .pricing-btn:hover {
+      border-color: #667eea;
+      background: #f8fafc;
+    }
+
+    .pricing-card.popular .pricing-btn {
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      color: white;
+      border: none;
+    }
+
+    /* Testimonials Section */
+    .testimonials {
+      padding: 80px 60px;
+      background: linear-gradient(145deg, #667eea, #764ba2);
+      color: white;
+    }
+
+    .testimonials .section-header h2,
+    .testimonials .section-header p {
+      color: white;
+    }
+
+    .testimonials-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 32px;
+      max-width: 1100px;
+      margin: 0 auto;
+    }
+
+    .testimonial-card {
+      background: rgba(255, 255, 255, 0.1);
+      backdrop-filter: blur(10px);
+      border-radius: 24px;
+      padding: 32px;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+
+    .testimonial-card p {
+      font-size: 16px;
+      line-height: 1.6;
+      margin-bottom: 20px;
+      font-style: italic;
+    }
+
+    .testimonial-author {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .author-avatar {
+      width: 48px;
+      height: 48px;
+      background: rgba(255, 255, 255, 0.2);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: bold;
+    }
+
+    .author-info h4 {
+      font-size: 16px;
+      font-weight: 600;
+    }
+
+    .author-info p {
+      font-size: 12px;
+      opacity: 0.8;
+      margin: 0;
+    }
+
+    /* Contact Section */
+    .contact {
+      padding: 80px 60px;
+      background: white;
+    }
+
+    .contact-container {
+      display: flex;
+      gap: 50px;
+      max-width: 1100px;
+      margin: 0 auto;
+    }
+
+    .contact-info {
+      flex: 1;
+    }
+
+    .contact-info h3 {
+      font-size: 28px;
+      font-weight: 700;
+      margin-bottom: 20px;
+    }
+
+    .contact-details {
+      margin-top: 30px;
+    }
+
+    .contact-item {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      padding: 16px 0;
+      border-bottom: 1px solid #e2e8f0;
+    }
+
+    .contact-icon {
+      font-size: 28px;
+    }
+
+    .contact-item h4 {
+      font-size: 16px;
+      font-weight: 600;
+      margin-bottom: 4px;
+    }
+
+    .contact-item p {
+      color: #64748b;
+    }
+
+    .contact-item a {
+      color: #667eea;
+      text-decoration: none;
+    }
+
+    .contact-item a:hover {
+      text-decoration: underline;
+    }
+
+    .contact-form {
+      flex: 1;
+      background: #f8fafc;
+      padding: 32px;
+      border-radius: 28px;
+    }
+
+    .contact-form input,
+    .contact-form textarea {
+      width: 100%;
+      padding: 14px 18px;
+      margin-bottom: 16px;
+      border: 2px solid #e2e8f0;
+      border-radius: 16px;
+      font-size: 14px;
+      font-family: inherit;
+    }
+
+    .contact-form input:focus,
+    .contact-form textarea:focus {
+      outline: none;
+      border-color: #667eea;
+    }
+
+    .contact-form button {
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      color: white;
+      padding: 14px 28px;
+      border: none;
+      border-radius: 40px;
+      cursor: pointer;
+      font-weight: 600;
+      width: 100%;
+      transition: all 0.2s;
+    }
+
+    .contact-form button:hover {
+      opacity: 0.9;
+      transform: translateY(-2px);
+    }
+
+    /* Footer */
+    .footer {
+      background: #0f172a;
+      color: #94a3b8;
+      padding: 60px 60px 30px;
+    }
+
+    .footer-content {
+      display: flex;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 40px;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    .footer-logo h3 {
+      font-size: 24px;
+      font-weight: 700;
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin-bottom: 16px;
+    }
+
+    .footer-links {
+      display: flex;
+      gap: 60px;
+      flex-wrap: wrap;
+    }
+
+    .footer-column h4 {
+      color: white;
+      margin-bottom: 16px;
+    }
+
+    .footer-column a {
+      display: block;
+      color: #94a3b8;
+      text-decoration: none;
+      margin-bottom: 10px;
+      transition: color 0.2s;
+    }
+
+    .footer-column a:hover {
+      color: #667eea;
+    }
+
+    .footer-bottom {
+      text-align: center;
+      padding-top: 40px;
+      margin-top: 40px;
+      border-top: 1px solid #1e293b;
+    }
+
+    /* Loading Spinner */
+    .loading {
+      text-align: center;
+      padding: 40px;
+      color: #64748b;
+    }
+
+    /* Responsive Breakpoints */
+    @media (max-width: 1200px) {
+      .hero {
+        padding: 140px 40px 80px;
+      }
+    }
+
+    @media (max-width: 992px) {
+      .navbar {
+        padding: 16px 30px;
+      }
+      .hero {
+        flex-direction: column;
+        text-align: center;
+        padding: 120px 30px 60px;
+      }
+      .hero-content p {
+        margin-left: auto;
+        margin-right: auto;
+      }
+      .hero-buttons {
+        justify-content: center;
+      }
+      .hero-image svg {
+        max-width: 400px;
+      }
+      .features-grid,
+      .steps-grid,
+      .pricing-grid,
+      .testimonials-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+      .contact-container {
+        flex-direction: column;
+      }
+    }
+
+    @media (max-width: 768px) {
+      .navbar {
+        flex-direction: column;
+        padding: 16px 20px;
+      }
+      .nav-links {
+        gap: 25px;
+      }
+      .hero {
+        padding: 140px 20px 50px;
+      }
+      .hero-content h1 {
+        font-size: 32px;
+      }
+      .hero-content p {
+        font-size: 16px;
+      }
+      .hero-image svg {
+        max-width: 300px;
+      }
+      .features, .how-it-works, .pricing, .testimonials, .contact {
+        padding: 50px 20px;
+      }
+      .section-header h2 {
+        font-size: 28px;
+      }
+      .features-grid,
+      .steps-grid,
+      .pricing-grid,
+      .testimonials-grid {
+        grid-template-columns: 1fr;
+      }
+      .pricing-card.popular {
+        transform: none;
+      }
+      .footer {
+        padding: 40px 20px 20px;
+      }
+      .footer-content {
+        flex-direction: column;
+        text-align: center;
+      }
+      .footer-links {
+        justify-content: center;
+      }
+    }
+
+    @media (max-width: 480px) {
+      .hero-content h1 {
+        font-size: 28px;
+      }
+      .btn-primary, .btn-secondary {
+        padding: 12px 24px;
+        font-size: 14px;
+      }
+      .hero-image svg {
+        max-width: 280px;
+      }
+      .pricing-card {
+        padding: 32px 24px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <!-- Navigation -->
+  <nav class="navbar">
+    <div class="logo">🎨 JOH GRAPHICS</div>
+    <div class="nav-links">
+      <a href="#home">Home</a>
+      <a href="#features">Features</a>
+      <a href="#pricing">Pricing</a>
+      <a href="#contact">Contact</a>
+    </div>
+  </nav>
+
+  <!-- Hero Section -->
+  <section id="home" class="hero">
+    <div class="hero-content">
+      <h1>Master Graphic Design<br>From Anywhere</h1>
+      <p>Join thousands of students learning professional graphic design with hands-on assignments, expert-led exams, and real-world projects. Get certified and build your creative career.</p>
+      <div class="hero-buttons">
+        <a href="user.html" class="btn-primary">Get Started →</a>
+        <a href="#features" class="btn-secondary">Learn More</a>
+      </div>
+    </div>
+    <div class="hero-image">
+      <svg viewBox="0 0 500 500" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <!-- Background Office Wall -->
+        <rect x="0" y="0" width="500" height="500" fill="#f0f4ff" rx="20"/>
+        
+        <!-- Window -->
+        <rect x="350" y="30" width="120" height="150" rx="10" fill="#87CEEB" stroke="#cbd5e1" stroke-width="3"/>
+        <line x1="410" y1="30" x2="410" y2="180" stroke="#cbd5e1" stroke-width="3"/>
+        <line x1="350" y1="105" x2="470" y2="105" stroke="#cbd5e1" stroke-width="3"/>
+        <rect x="355" y="35" width="50" height="65" rx="5" fill="#a8d8ea" opacity="0.5"/>
+        <rect x="415" y="35" width="50" height="65" rx="5" fill="#a8d8ea" opacity="0.5"/>
+        
+        <!-- Desk -->
+        <rect x="30" y="330" width="350" height="20" rx="5" fill="#8B5A2B"/>
+        <rect x="30" y="350" width="20" height="120" fill="#8B5A2B"/>
+        <rect x="360" y="350" width="20" height="120" fill="#8B5A2B"/>
+        
+        <!-- Computer Monitor -->
+        <rect x="150" y="200" width="180" height="130" rx="10" fill="#2d3748"/>
+        <rect x="160" y="210" width="160" height="100" rx="5" fill="#e2e8f0"/>
+        <!-- Screen Content - Design Work -->
+        <rect x="170" y="220" width="60" height="40" rx="3" fill="#667eea" opacity="0.7"/>
+        <rect x="240" y="220" width="50" height="40" rx="3" fill="#764ba2" opacity="0.7"/>
+        <circle cx="200" cy="285" r="15" fill="#10b981" opacity="0.6"/>
+        <rect x="230" y="270" width="70" height="30" rx="3" fill="#f59e0b" opacity="0.6"/>
+        <!-- Monitor Stand -->
+        <rect x="220" y="330" width="40" height="10" fill="#4a5568"/>
+        
+        <!-- Drawing Tablet on Desk -->
+        <rect x="50" y="280" width="80" height="50" rx="5" fill="#1a202c"/>
+        <rect x="55" y="285" width="70" height="35" rx="3" fill="#2d3748"/>
+        <!-- Pen on Tablet -->
+        <line x1="120" y1="290" x2="140" y2="270" stroke="#e2e8f0" stroke-width="3" stroke-linecap="round"/>
+        
+        <!-- Coffee Cup -->
+        <rect x="340" y="300" width="25" height="30" rx="3" fill="#e2e8f0"/>
+        <ellipse cx="352" cy="300" rx="12" ry="4" fill="#cbd5e1"/>
+        <path d="M365 305 Q375 305 375 315 Q375 325 365 325" stroke="#e2e8f0" stroke-width="3" fill="none"/>
+        
+        <!-- Packaging Box on Desk (Right side) -->
+        <rect x="380" y="290" width="60" height="40" rx="5" fill="#fef3c7" stroke="#f59e0b" stroke-width="2"/>
+        <rect x="395" y="280" width="30" height="15" rx="3" fill="#fef3c7" stroke="#f59e0b" stroke-width="2"/>
+        <text x="395" y="312" font-size="8" fill="#92400e" font-weight="bold">PACKAGE</text>
+        <rect x="385" y="295" width="10" height="10" fill="#10b981" opacity="0.5"/>
+        <rect x="425" y="295" width="10" height="10" fill="#3b82f6" opacity="0.5"/>
+        
+        <!-- Person Sitting at Desk -->
+        <!-- Body -->
+        <ellipse cx="250" cy="400" rx="40" ry="25" fill="#667eea"/>
+        <!-- Head -->
+        <circle cx="250" cy="175" r="30" fill="#fdbcb4"/>
+        <!-- Hair -->
+        <path d="M220 170 Q220 145 250 140 Q280 145 280 170" fill="#4a2c2a"/>
+        <!-- Eyes -->
+        <circle cx="240" cy="172" r="3" fill="#1a202c"/>
+        <circle cx="260" cy="172" r="3" fill="#1a202c"/>
+        <!-- Smile -->
+        <path d="M242 182 Q250 190 258 182" stroke="#1a202c" stroke-width="2" fill="none" stroke-linecap="round"/>
+        <!-- Arms reaching to keyboard -->
+        <line x1="210" y1="250" x2="170" y2="290" stroke="#fdbcb4" stroke-width="8" stroke-linecap="round"/>
+        <line x1="290" y1="250" x2="330" y2="290" stroke="#fdbcb4" stroke-width="8" stroke-linecap="round"/>
+        
+        <!-- Decorative Elements - Design Icons Floating -->
+        <!-- Color Palette -->
+        <circle cx="80" cy="120" r="25" fill="white" stroke="#667eea" stroke-width="2"/>
+        <circle cx="72" cy="115" r="5" fill="#ef4444"/>
+        <circle cx="88" cy="115" r="5" fill="#10b981"/>
+        <circle cx="80" cy="128" r="5" fill="#f59e0b"/>
+        <circle cx="72" cy="128" r="5" fill="#3b82f6"/>
+        
+        <!-- Pen Tool Icon -->
+        <path d="M430 120 L450 100 L455 105 L435 125 Z" fill="#667eea"/>
+        <path d="M450 100 L455 105 L460 95 Z" fill="#764ba2"/>
+        
+        <!-- Star/Sparkle -->
+        <path d="M50 60 L55 50 L60 60 L70 65 L60 70 L55 80 L50 70 L40 65 Z" fill="#f59e0b" opacity="0.8"/>
+        <path d="M460 70 L463 63 L466 70 L473 73 L466 76 L463 83 L460 76 L453 73 Z" fill="#10b981" opacity="0.8"/>
+      </svg>
+    </div>
+  </section>
+
+  <!-- Features Section -->
+  <section id="features" class="features">
+    <div class="section-header">
+      <h2>Everything You Need to Succeed</h2>
+      <p>All the tools and resources to master graphic design</p>
+    </div>
+    <div class="features-grid">
+      <div class="feature-card">
+        <div class="feature-icon">📝</div>
+        <h3>Practical Assignments</h3>
+        <p>Real-world design projects that build your portfolio while you learn. Get feedback and improve your skills.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">📊</div>
+        <h3>Interactive Exams</h3>
+        <p>Test your knowledge with timed exams. Track your progress and earn certificates for each completed course.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">📤</div>
+        <h3>Easy Submissions</h3>
+        <p>Upload your work directly from your browser. Submit images, PDFs, and design files with one click.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">⏰</div>
+        <h3>Timed Exams</h3>
+        <p>Practice time management with countdown timers. Auto-submit feature ensures fairness.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">🎓</div>
+        <h3>Certificates</h3>
+        <p>Earn verifiable certificates upon completion. Share your achievements on LinkedIn and your resume.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">💬</div>
+        <h3>24/7 Support</h3>
+        <p>Direct contact with instructors and admin. Get answers to your questions within 24 hours.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- How It Works Section -->
+  <section class="how-it-works">
+    <div class="section-header">
+      <h2>How It Works</h2>
+      <p>Simple steps to start your creative journey</p>
+    </div>
+    <div class="steps-grid">
+      <div class="step-card">
+        <div class="step-number">1</div>
+        <h3>Choose Your Plan</h3>
+        <p>Select a subscription plan that fits your learning goals and budget.</p>
+      </div>
+      <div class="step-card">
+        <div class="step-number">2</div>
+        <h3>Access Assignments</h3>
+        <p>Get access to all assignments, projects, and learning materials.</p>
+      </div>
+      <div class="step-card">
+        <div class="step-number">3</div>
+        <h3>Complete & Submit</h3>
+        <p>Work on assignments, take exams, and submit your work for grading.</p>
+      </div>
+      <div class="step-card">
+        <div class="step-number">4</div>
+        <h3>Get Certified</h3>
+        <p>Receive your certificate and showcase your new skills to the world.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Pricing Section -->
+  <section id="pricing" class="pricing">
+    <div class="section-header">
+      <h2>Simple, Transparent Pricing</h2>
+      <p>Choose the plan that works for you</p>
+    </div>
+    <div class="pricing-grid" id="pricingGrid">
+      <div class="loading">Loading plans...</div>
+    </div>
+  </section>
+
+  <!-- Testimonials Section -->
+  <section class="testimonials">
+    <div class="section-header">
+      <h2>What Our Students Say</h2>
+      <p>Join thousands of successful designers who started here</p>
+    </div>
+    <div class="testimonials-grid">
+      <div class="testimonial-card">
+        <p>"The assignments are practical and relevant. I built my portfolio while learning and landed my first freelance client within 3 months!"</p>
+        <div class="testimonial-author">
+          <div class="author-avatar">JD</div>
+          <div class="author-info">
+            <h4>John Doe</h4>
+            <p>Freelance Designer</p>
+          </div>
+        </div>
+      </div>
+      <div class="testimonial-card">
+        <p>"The exam system helped me validate my skills. The certificate opened doors for me at a top design agency."</p>
+        <div class="testimonial-author">
+          <div class="author-avatar">JS</div>
+          <div class="author-info">
+            <h4>Jane Smith</h4>
+            <p>UI/UX Designer at TechCorp</p>
+          </div>
+        </div>
+      </div>
+      <div class="testimonial-card">
+        <p>"Best investment I made in my career. The support team is responsive and the content is always up to date."</p>
+        <div class="testimonial-author">
+          <div class="author-avatar">MB</div>
+          <div class="author-info">
+            <h4>Michael Brown</h4>
+            <p>Creative Director</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Contact Section -->
+  <section id="contact" class="contact">
+    <div class="section-header">
+      <h2>Get in Touch</h2>
+      <p>Have questions? We're here to help</p>
+    </div>
+    <div class="contact-container">
+      <div class="contact-info" id="contactInfo">
+        <h3>Contact Admin</h3>
+        <p>Have questions about the course, subscription, or need technical support? Reach out to our admin team.</p>
+        <div class="contact-details">
+          <div class="contact-item">
+            <div class="contact-icon">📧</div>
+            <div>
+              <h4>Email Us</h4>
+              <p><a href="#" id="adminEmailLink">admin@johgraphics.com</a></p>
+            </div>
+          </div>
+          <div class="contact-item">
+            <div class="contact-icon">💬</div>
+            <div>
+              <h4>WhatsApp Support</h4>
+              <p><a href="#" id="whatsappLink">Join Our WhatsApp Group</a></p>
+            </div>
+          </div>
+          <div class="contact-item">
+            <div class="contact-icon">⏰</div>
+            <div>
+              <h4>Support Hours</h4>
+              <p>Monday - Friday: 9AM - 6PM<br>Saturday: 10AM - 2PM</p>
+            </div>
+          </div>
+        </div>
+      </div>
+      <form class="contact-form" id="contactForm">
+        <input type="text" id="contactName" placeholder="Your Name" required>
+        <input type="email" id="contactEmail" placeholder="Your Email" required>
+        <textarea id="contactMessage" rows="5" placeholder="Your Message" required></textarea>
+        <button type="submit">Send Message →</button>
+        <div id="formMessage" style="margin-top: 12px; text-align: center; font-size: 14px;"></div>
+      </form>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="footer-content">
+      <div class="footer-logo">
+        <h3>🎨 JOH GRAPHICS</h3>
+        <p>Empowering creative minds<br>to build better designs</p>
+      </div>
+      <div class="footer-links">
+        <div class="footer-column">
+          <h4>Platform</h4>
+          <a href="#features">Features</a>
+          <a href="#pricing">Pricing</a>
+          <a href="#">FAQ</a>
+          <a href="user.html">Student Portal</a>
+        </div>
+        <div class="footer-column">
+          <h4>Support</h4>
+          <a href="#contact">Contact Admin</a>
+          <a href="#">Help Center</a>
+          <a href="#">Terms of Service</a>
+          <a href="#">Privacy Policy</a>
+        </div>
+        <div class="footer-column">
+          <h4>Connect</h4>
+          <a href="#" id="footerWhatsappLink">WhatsApp Group</a>
+          <a href="#">Instagram</a>
+          <a href="#">Twitter</a>
+          <a href="#">LinkedIn</a>
+        </div>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <p>&copy; 2024 JOH GRAPHICS. All rights reserved. Designed for creative excellence.</p>
+    </div>
+  </footer>
+
+  <script>
+    // Firebase Configuration
+    const firebaseConfig = {
+      apiKey: "AIzaSyDKz2APg912fZldKRN6Y9PColnKuHAOtK0",
+      authDomain: "sibao-9a1e8.firebaseapp.com",
+      databaseURL: "https://sibao-9a1e8-default-rtdb.firebaseio.com",
+      projectId: "sibao-9a1e8",
+      storageBucket: "sibao-9a1e8.firebasestorage.app",
+      messagingSenderId: "628980007050",
+      appId: "1:628980007050:web:cff19acf1785babcd72d73",
+      measurementId: "G-5BZ22ZY3P0"
+    };
+    
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+
+    // Load Subscription Plans from Firebase
+    async function loadSubscriptionPlans() {
+      const pricingGrid = document.getElementById('pricingGrid');
+      pricingGrid.innerHTML = '<div class="loading">Loading plans...</div>';
+      
+      try {
+        const subDoc = await db.collection('settings').doc('subscription').get();
+        const subData = subDoc.data();
+        
+        if (subData) {
+          const planType = subData.subscriptionType || 'monthly';
+          const price = subData.price || '29';
+          const description = subData.description || 'Full access to all assignments, exams, and certificates';
+          
+          let plans = [];
+          
+          if (planType === 'monthly') {
+            plans = [
+              { name: 'Monthly', price: price, period: '/month', featured: false, description: description },
+              { name: 'Yearly', price: Math.round(price * 12 * 0.7), period: '/year', featured: true, description: description + ' Save 30% annually' },
+              { name: 'Lifetime', price: Math.round(price * 12 * 2), period: '/one-time', featured: false, description: description + ' Lifetime access' }
+            ];
+          } else if (planType === 'yearly') {
+            plans = [
+              { name: 'Monthly', price: Math.round(price / 12 * 1.3), period: '/month', featured: false, description: description },
+              { name: 'Yearly', price: price, period: '/year', featured: true, description: description },
+              { name: 'Lifetime', price: Math.round(price * 2), period: '/one-time', featured: false, description: description + ' Lifetime access' }
+            ];
+          } else {
+            plans = [
+              { name: 'Monthly', price: Math.round(price / 12), period: '/month', featured: false, description: description },
+              { name: 'Yearly', price: Math.round(price / 12 * 10), period: '/year', featured: false, description: description },
+              { name: 'Lifetime', price: price, period: '/one-time', featured: true, description: description + ' Best value!' }
+            ];
+          }
+          
+          pricingGrid.innerHTML = plans.map(plan => `
+            <div class="pricing-card ${plan.featured ? 'popular' : ''}">
+              ${plan.featured ? '<div class="popular-badge">Most Popular</div>' : ''}
+              <h3>${plan.name}</h3>
+              <div class="price">$${plan.price}<span>${plan.period}</span></div>
+              <ul>
+                <li>All assignments access</li>
+                <li>All exams included</li>
+                <li>Certificate upon completion</li>
+                <li>Email support</li>
+              </ul>
+              <a href="user.html" class="pricing-btn">Get Started</a>
+            </div>
+          `).join('');
+        } else {
+          setDefaultPricing(pricingGrid);
+        }
+      } catch (error) {
+        console.error("Error loading subscription:", error);
+        setDefaultPricing(pricingGrid);
+      }
+    }
+
+    function setDefaultPricing(pricingGrid) {
+      pricingGrid.innerHTML = `
+        <div class="pricing-card">
+          <h3>Monthly</h3>
+          <div class="price">$29<span>/month</span></div>
+          <ul><li>Full access to all content</li><li>Certificate included</li><li>Email support</li></ul>
+          <a href="user.html" class="pricing-btn">Get Started</a>
+        </div>
+        <div class="pricing-card popular">
+          <div class="popular-badge">Most Popular</div>
+          <h3>Yearly</h3>
+          <div class="price">$199<span>/year</span></div>
+          <ul><li>Save 40%</li><li>Priority support</li><li>All features included</li></ul>
+          <a href="user.html" class="pricing-btn">Get Started</a>
+        </div>
+        <div class="pricing-card">
+          <h3>Lifetime</h3>
+          <div class="price">$499<span>/one-time</span></div>
+          <ul><li>Lifetime access</li><li>All updates included</li><li>Premium support</li></ul>
+          <a href="user.html" class="pricing-btn">Get Started</a>
+        </div>
+      `;
+    }
+
+    // Load Admin Contact Info from Firebase
+    async function loadAdminContact() {
+      try {
+        const adminDoc = await db.collection('settings').doc('adminContact').get();
+        const whatsappDoc = await db.collection('settings').doc('whatsappGroup').get();
+        
+        const adminEmail = adminDoc.data()?.email || 'admin@johgraphics.com';
+        const whatsappLink = whatsappDoc.data()?.link || '#';
+        
+        const emailLink = document.getElementById('adminEmailLink');
+        if (emailLink) {
+          emailLink.href = `mailto:${adminEmail}`;
+          emailLink.textContent = adminEmail;
+        }
+        
+        const whatsappLinks = document.querySelectorAll('#whatsappLink, #footerWhatsappLink');
+        whatsappLinks.forEach(link => {
+          link.href = whatsappLink;
+        });
+        
+      } catch (error) {
+        console.error("Error loading admin contact:", error);
+      }
+    }
+
+    // Save Contact Message to Firebase
+    async function saveContactMessage(name, email, message) {
+      try {
+        await db.collection('contactMessages').add({
+          name: name,
+          email: email,
+          message: message,
+          status: 'unread',
+          createdAt: new Date(),
+          timestamp: firebase.firestore.FieldValue.serverTimestamp()
+        });
+        return true;
+      } catch (error) {
+        console.error("Error saving message:", error);
+        return false;
+      }
+    }
+
+    // Handle Contact Form Submission
+    document.getElementById('contactForm').addEventListener('submit', async function(e) {
+      e.preventDefault();
+      const name = document.getElementById('contactName').value;
+      const email = document.getElementById('contactEmail').value;
+      const message = document.getElementById('contactMessage').value;
+      const messageDiv = document.getElementById('formMessage');
+      
+      if (!name || !email || !message) {
+        messageDiv.innerHTML = '❌ Please fill in all fields';
+        messageDiv.style.color = '#ef4444';
+        return;
+      }
+      
+      messageDiv.innerHTML = '⏳ Sending message...';
+      messageDiv.style.color = '#667eea';
+      
+      const success = await saveContactMessage(name, email, message);
+      
+      if (success) {
+        messageDiv.innerHTML = '✅ Message sent! Admin will get back to you shortly.';
+        messageDiv.style.color = '#10b981';
+        document.getElementById('contactForm').reset();
+        setTimeout(() => {
+          messageDiv.innerHTML = '';
+        }, 5000);
+      } else {
+        messageDiv.innerHTML = '❌ Failed to send message. Please try again.';
+        messageDiv.style.color = '#ef4444';
+      }
+    });
+
+    // Load all data
+    loadSubscriptionPlans();
+    loadAdminContact();
+
+    // Smooth scroll for anchor links
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+      anchor.addEventListener('click', function(e) {
+        e.preventDefault();
+        const target = document.querySelector(this.getAttribute('href'));
+        if (target) {
+          target.scrollIntoView({ behavior: 'smooth' });
+        }
+      });
+    });
+  </script>
+</body>
+</html>

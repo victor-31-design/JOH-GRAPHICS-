@@ -1,0 +1,737 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>JOH GRAPHICS - Admin Dashboard</title>
+  
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+  
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Inter', sans-serif; background: #f5f7fb; color: #1e293b; overflow-x: hidden; }
+
+    .app-container { display: flex; min-height: 100vh; position: relative; }
+    .sidebar { width: 280px; background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%); border-right: 1px solid #e2e8f0; padding: 28px 20px; position: fixed; height: 100vh; overflow-y: auto; z-index: 1000; transition: transform 0.3s ease; }
+    @media (max-width: 768px) { .sidebar { transform: translateX(-100%); } .sidebar.open { transform: translateX(0); } }
+    .sidebar-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 999; backdrop-filter: blur(2px); }
+    .sidebar-overlay.active { display: block; }
+    @media (min-width: 769px) { .sidebar-overlay { display: none !important; } }
+
+    .sidebar-logo { display: flex; align-items: center; justify-content: space-between; margin-bottom: 40px; padding-bottom: 24px; border-bottom: 1px solid #e2e8f0; }
+    .sidebar-logo h1 { font-size: 22px; font-weight: 700; background: linear-gradient(135deg, #667eea, #764ba2); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+    .admin-badge { background: linear-gradient(135deg, #667eea, #764ba2); color: white; padding: 4px 10px; border-radius: 30px; font-size: 10px; font-weight: 600; }
+
+    .hamburger { display: none; position: fixed; top: 20px; left: 20px; z-index: 1001; background: white; border: none; width: 48px; height: 48px; border-radius: 12px; cursor: pointer; }
+    .hamburger span { display: block; width: 24px; height: 2px; background: #667eea; margin: 5px auto; }
+    @media (max-width: 768px) { .hamburger { display: block; } }
+
+    .nav-menu { display: flex; flex-direction: column; gap: 8px; }
+    .nav-item { display: flex; align-items: center; gap: 14px; padding: 14px 18px; border-radius: 14px; cursor: pointer; transition: all 0.3s; color: #64748b; font-weight: 500; }
+    .nav-item:hover { background: #f1f5f9; color: #667eea; }
+    .nav-item.active { background: linear-gradient(135deg, #667eea, #764ba2); color: white; }
+    .nav-icon { font-size: 20px; width: 28px; }
+
+    .admin-profile { margin-top: auto; padding-top: 30px; border-top: 1px solid #e2e8f0; margin-top: 30px; }
+    .profile-card { display: flex; align-items: center; gap: 12px; padding: 12px; background: #f8fafc; border-radius: 16px; }
+    .profile-avatar { width: 44px; height: 44px; background: linear-gradient(135deg, #667eea, #764ba2); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; }
+    .profile-info { flex: 1; }
+    .profile-name { font-weight: 700; font-size: 14px; }
+    .profile-email { font-size: 11px; color: #94a3b8; }
+    .logout-sidebar-btn { width: 100%; margin-top: 12px; padding: 10px; background: #ef4444; color: white; border: none; border-radius: 12px; cursor: pointer; font-weight: 600; }
+
+    .main-content { flex: 1; margin-left: 280px; padding: 32px 40px; transition: margin-left 0.3s; }
+    @media (max-width: 768px) { .main-content { margin-left: 0; padding: 80px 20px 32px; } }
+
+    .page-header { margin-bottom: 32px; }
+    .page-header h1 { font-size: 28px; font-weight: 700; }
+    .page-header p { color: #64748b; margin-top: 6px; }
+
+    .card { background: white; border-radius: 24px; padding: 28px; margin-bottom: 28px; box-shadow: 0 4px 20px rgba(0,0,0,0.03); border: 1px solid #e2e8f0; }
+    .card h2 { font-size: 20px; font-weight: 600; margin-bottom: 20px; border-left: 4px solid #667eea; padding-left: 15px; }
+    .card h3 { font-size: 16px; margin: 20px 0 12px; color: #334155; }
+
+    .search-bar { margin-bottom: 20px; display: flex; gap: 10px; flex-wrap: wrap; }
+    .search-bar input { flex: 1; padding: 12px 16px; border: 2px solid #e2e8f0; border-radius: 14px; font-size: 14px; min-width: 200px; }
+    .search-bar input:focus { outline: none; border-color: #667eea; }
+    .search-bar button { background: linear-gradient(135deg, #667eea, #764ba2); color: white; padding: 12px 24px; border: none; border-radius: 14px; cursor: pointer; font-weight: 600; transition: none; }
+    .search-bar button:hover { opacity: 0.9; transform: none; }
+    .clear-search { background: #64748b; }
+
+    input, textarea, select { width: 100%; padding: 12px 16px; margin: 8px 0; border: 2px solid #e2e8f0; border-radius: 14px; font-size: 14px; }
+    input:focus, textarea:focus { outline: none; border-color: #667eea; }
+    button { background: linear-gradient(135deg, #667eea, #764ba2); color: white; padding: 10px 22px; border: none; border-radius: 40px; cursor: pointer; font-weight: 600; transition: all 0.2s; }
+    button:hover { transform: translateY(-2px); }
+    .delete-btn { background: #ef4444; }
+    .disable-btn { background: #f59e0b; }
+    .enable-btn { background: #10b981; }
+    .renew-btn { background: #8b5cf6; }
+    .add-user-btn { background: #10b981; }
+    .reset-pwd-btn { background: #3b82f6; }
+    .view-scores-btn { background: #06b6d4; }
+
+    .user-item, .submission-item, .assignment-item, .exam-item, .message-item { border: 1px solid #e2e8f0; border-radius: 18px; padding: 16px; margin: 12px 0; background: #fafbfe; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; }
+    .user-info { flex: 1; }
+    .user-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+    .disabled-account { opacity: 0.7; background: #fef3c7; border-color: #f59e0b; }
+    .disabled-badge { background: #f59e0b; color: white; padding: 2px 8px; border-radius: 20px; font-size: 11px; margin-left: 8px; }
+    .success-msg { background: #10b981; color: white; padding: 12px; border-radius: 14px; margin-top: 12px; }
+    .error-msg { background: #ef4444; color: white; padding: 12px; border-radius: 14px; margin-top: 12px; }
+    .preview-image { max-width: 100px; margin-top: 12px; border-radius: 12px; }
+    .grade-input { width: 80px; display: inline-block; margin-right: 10px; }
+    .feedback-input { width: 200px; display: inline-block; margin-right: 10px; }
+    .question-card { background: #f8fafc; border-radius: 18px; padding: 18px; margin: 12px 0; border-left: 4px solid #667eea; }
+    .question-options { margin-left: 24px; margin-top: 12px; }
+    .question-options label { display: block; margin: 6px 0; }
+
+    .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); backdrop-filter: blur(8px); z-index: 1002; overflow-y: auto; }
+    .modal-content { background: white; max-width: 800px; margin: 80px auto; padding: 32px; border-radius: 32px; position: relative; animation: modalSlideIn 0.3s ease; }
+    @keyframes modalSlideIn { from { opacity: 0; transform: translateY(-30px); } to { opacity: 1; transform: translateY(0); } }
+    .close-modal { position: absolute; top: 20px; right: 24px; font-size: 28px; cursor: pointer; color: #94a3b8; }
+    .generated-credentials { background: #f1f5f9; padding: 20px; border-radius: 16px; margin: 15px 0; text-align: center; }
+    .copy-btn { background: #667eea; padding: 6px 12px; font-size: 12px; margin-left: 10px; }
+
+    .subscription-plan { background: #f8fafc; border-radius: 16px; padding: 20px; margin: 15px 0; border: 1px solid #e2e8f0; }
+
+    .scores-table { width: 100%; border-collapse: collapse; margin-top: 16px; }
+    .scores-table th, .scores-table td { border: 1px solid #e2e8f0; padding: 12px; text-align: left; }
+    .scores-table th { background: linear-gradient(135deg, #667eea, #764ba2); color: white; }
+    .pass { color: #10b981; font-weight: bold; }
+    .fail { color: #ef4444; font-weight: bold; }
+
+    .no-results { text-align: center; padding: 40px; color: #64748b; }
+    .message-unread { background: #fff7ed; border-left: 4px solid #f59e0b; }
+    .message-read { opacity: 0.7; }
+
+    @media (max-width: 768px) { .card { padding: 20px; } .user-item { flex-direction: column; gap: 12px; } .user-actions { justify-content: center; } }
+  </style>
+</head>
+<body>
+  <button class="hamburger" id="hamburgerBtn"><span></span><span></span><span></span></button>
+
+  <div class="app-container">
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+    
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-logo"><h1>🎨 JOH GRAPHICS</h1><span class="admin-badge">ADMIN</span></div>
+      <nav class="nav-menu">
+        <div class="nav-item active" data-panel="users"><span class="nav-icon">👥</span><span>Users</span></div>
+        <div class="nav-item" data-panel="addUser"><span class="nav-icon">➕</span><span>Add User</span></div>
+        <div class="nav-item" data-panel="subscription"><span class="nav-icon">💰</span><span>Subscription</span></div>
+        <div class="nav-item" data-panel="assignments"><span class="nav-icon">📝</span><span>Assignments</span></div>
+        <div class="nav-item" data-panel="exams"><span class="nav-icon">📊</span><span>Exams</span></div>
+        <div class="nav-item" data-panel="submissions"><span class="nav-icon">📋</span><span>Submissions</span></div>
+        <div class="nav-item" data-panel="messages"><span class="nav-icon">💬</span><span>Messages</span></div>
+        <div class="nav-item" data-panel="settings"><span class="nav-icon">⚙️</span><span>Settings</span></div>
+      </nav>
+      <div class="admin-profile">
+        <div class="profile-card"><div class="profile-avatar" id="adminAvatar">A</div><div class="profile-info"><div class="profile-name" id="adminName">Admin</div><div class="profile-email" id="adminEmail">admin@johgraphics.com</div></div></div>
+        <button class="logout-sidebar-btn" id="sidebarLogoutBtn">Logout</button>
+      </div>
+    </aside>
+
+    <main class="main-content">
+      <div class="page-header"><h1>Admin Dashboard</h1><p>Manage your creative academy</p></div>
+
+      <!-- Users Panel -->
+      <div id="usersPanel" class="admin-panel">
+        <div class="card"><h2>👥 Registered Users</h2>
+          <div class="search-bar"><input type="text" id="searchUsers" placeholder="🔍 Search by name or email..."><button onclick="searchUsers()">Search</button><button class="clear-search" onclick="clearUserSearch()">Clear</button></div>
+          <div id="usersList">Loading...</div>
+        </div>
+      </div>
+
+      <!-- Add User Panel -->
+      <div id="addUserPanel" class="admin-panel" style="display:none;">
+        <div class="card"><h2>➕ Add New User</h2>
+          <input type="text" id="newUserName" placeholder="Full Name">
+          <input type="email" id="newUserEmail" placeholder="Email address">
+          <input type="password" id="newUserPassword" placeholder="Temporary Password (min 6 characters)">
+          <select id="newUserRole"><option value="user">Student</option><option value="admin">Admin</option></select>
+          <button id="createUserBtn" class="add-user-btn">➕ Create User Account</button>
+          <div id="createUserMsg"></div>
+        </div>
+      </div>
+
+      <!-- Subscription Panel -->
+      <div id="subscriptionPanel" class="admin-panel" style="display:none;">
+        <div class="card"><h2>💰 Subscription Settings</h2>
+          <div class="subscription-plan">
+            <label>Subscription Type</label>
+            <select id="subType"><option value="monthly">Monthly (30 days)</option><option value="yearly">Yearly (365 days)</option><option value="lifetime">Lifetime</option></select>
+            <label>Price (USD)</label><input type="number" id="subPrice" value="29">
+            <label>Description</label><textarea id="subDesc" rows="2"></textarea>
+            <button id="saveSubscriptionBtn">💾 Save</button><div id="subSettingsMsg"></div>
+          </div>
+          <div id="currentSubInfo"></div>
+        </div>
+      </div>
+
+      <!-- Assignments Panel -->
+      <div id="assignmentsPanel" class="admin-panel" style="display:none;">
+        <div class="card"><h2>📝 Create Assignment</h2>
+          <input type="text" id="assignTitle"><textarea id="assignDesc" rows="3"></textarea>
+          <input type="date" id="assignDue"><input type="file" id="assignImage" accept="image/*"><div id="imagePreview"></div>
+          <button id="createAssignmentBtn">➕ Create</button><div id="assignMsg"></div>
+          <h3>Existing Assignments</h3>
+          <div class="search-bar"><input type="text" id="searchAssignments" placeholder="🔍 Search assignments..."><button onclick="searchAssignments()">Search</button><button class="clear-search" onclick="clearAssignmentSearch()">Clear</button></div>
+          <div id="assignmentsList">Loading...</div>
+        </div>
+      </div>
+
+      <!-- Exams Panel -->
+      <div id="examsPanel" class="admin-panel" style="display:none;">
+        <div class="card"><h2>📝 Create Exam</h2>
+          <input type="text" id="examTitle"><textarea id="examDesc" rows="2"></textarea>
+          <div style="display:flex; gap:15px;"><div style="flex:1"><label>Time Limit (minutes)</label><input type="number" id="examTimeLimit" value="30"></div>
+          <div style="flex:1"><label>Passing Score (%)</label><input type="number" id="examPassingScore" value="70"></div></div>
+          <h3>Questions</h3><div id="questionsContainer"></div>
+          <button id="addQuestionBtn" style="background:#10b981;">+ Add Question</button>
+          <button id="createExamBtn">Create Exam</button><div id="examMsg"></div>
+          <h3>Existing Exams</h3>
+          <div class="search-bar"><input type="text" id="searchExams" placeholder="🔍 Search exams..."><button onclick="searchExams()">Search</button><button class="clear-search" onclick="clearExamSearch()">Clear</button></div>
+          <div id="examsList">Loading...</div>
+        </div>
+      </div>
+
+      <!-- Submissions Panel -->
+      <div id="submissionsPanel" class="admin-panel" style="display:none;">
+        <div class="card"><h2>📋 Grade Submissions</h2>
+          <div class="search-bar"><input type="text" id="searchSubmissions" placeholder="🔍 Search by student or assignment..."><button onclick="searchSubmissions()">Search</button><button class="clear-search" onclick="clearSubmissionSearch()">Clear</button></div>
+          <div id="submissionsList">Loading...</div>
+        </div>
+      </div>
+
+      <!-- Contact Messages Panel -->
+      <div id="messagesPanel" class="admin-panel" style="display:none;">
+        <div class="card"><h2>💬 Contact Messages</h2>
+          <div class="search-bar"><input type="text" id="searchMessages" placeholder="🔍 Search by name, email, or message..."><button onclick="searchMessages()">Search</button><button class="clear-search" onclick="clearMessageSearch()">Clear</button></div>
+          <div id="messagesList">Loading...</div>
+        </div>
+      </div>
+
+      <!-- Settings Panel -->
+      <div id="settingsPanel" class="admin-panel" style="display:none;">
+        <div class="card"><h2>⚙️ Settings</h2>
+          <input type="email" id="settingsAdminEmail" placeholder="Admin email"><button id="updateEmailBtn">Save</button>
+          <input type="text" id="whatsappLink" placeholder="WhatsApp link"><button id="updateWhatsappBtn">Save WhatsApp</button>
+          <div id="settingsMsg"></div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- Modals -->
+  <div id="credentialsModal" class="modal"><div class="modal-content"><span class="close-modal" onclick="closeModal('credentialsModal')">&times;</span><h2>🎉 User Account Created!</h2><div id="credentialsContent"></div><button onclick="closeModal('credentialsModal')">Close</button></div></div>
+  <div id="resetPwdModal" class="modal"><div class="modal-content"><span class="close-modal" onclick="closeModal('resetPwdModal')">&times;</span><h2>🔐 Password Reset</h2><div id="resetPwdContent"></div><button onclick="closeModal('resetPwdModal')">Close</button></div></div>
+  <div id="renewModal" class="modal"><div class="modal-content"><span class="close-modal" onclick="closeModal('renewModal')">&times;</span><h2>🔄 Renew Subscription</h2><div id="renewContent"></div><button onclick="closeModal('renewModal')">Close</button></div></div>
+  <div id="scoresModal" class="modal"><div class="modal-content" style="max-width:900px;"><span class="close-modal" onclick="closeModal('scoresModal')">&times;</span><h2 id="scoresStudentName">Exam Scores</h2><div id="scoresContent"></div><button onclick="closeModal('scoresModal')">Close</button></div></div>
+
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyDKz2APg912fZldKRN6Y9PColnKuHAOtK0",
+      authDomain: "sibao-9a1e8.firebaseapp.com",
+      databaseURL: "https://sibao-9a1e8-default-rtdb.firebaseio.com",
+      projectId: "sibao-9a1e8",
+      storageBucket: "sibao-9a1e8.firebasestorage.app",
+      messagingSenderId: "628980007050",
+      appId: "1:628980007050:web:cff19acf1785babcd72d73",
+      measurementId: "G-5BZ22ZY3P0"
+    };
+    
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+    const db = firebase.firestore();
+
+    let questions = [];
+    let currentAdminUser = null;
+    
+    let allUsers = [];
+    let allAssignments = [];
+    let allExams = [];
+    let allSubmissions = [];
+    let allMessages = [];
+
+    // Sidebar functions
+    const hamburger = document.getElementById('hamburgerBtn');
+    const sidebar = document.getElementById('sidebar');
+    const overlay = document.getElementById('sidebarOverlay');
+    function openSidebar() { sidebar.classList.add('open'); overlay.classList.add('active'); document.body.style.overflow = 'hidden'; }
+    function closeSidebar() { sidebar.classList.remove('open'); overlay.classList.remove('active'); document.body.style.overflow = ''; }
+    hamburger?.addEventListener('click', openSidebar);
+    overlay?.addEventListener('click', closeSidebar);
+
+    function initPanels() {
+      const navItems = document.querySelectorAll('.nav-item');
+      const panels = ['usersPanel', 'addUserPanel', 'subscriptionPanel', 'assignmentsPanel', 'examsPanel', 'submissionsPanel', 'messagesPanel', 'settingsPanel'];
+      navItems.forEach((item, index) => {
+        item.addEventListener('click', () => {
+          navItems.forEach(nav => nav.classList.remove('active'));
+          item.classList.add('active');
+          panels.forEach(panel => { const el = document.getElementById(panel); if (el) el.style.display = 'none'; });
+          document.getElementById(panels[index]).style.display = 'block';
+          if (window.innerWidth <= 768) closeSidebar();
+        });
+      });
+    }
+
+    auth.onAuthStateChanged(async (user) => {
+      if (!user) { window.location.href = 'user.html'; return; }
+      try {
+        const userDoc = await db.collection('users').doc(user.uid).get();
+        if (userDoc.data()?.role !== 'admin') { alert('Access denied'); await auth.signOut(); window.location.href = 'user.html'; }
+        else {
+          currentAdminUser = user;
+          document.getElementById('adminName').innerHTML = userDoc.data()?.name || 'Admin';
+          document.getElementById('adminEmail').innerHTML = user.email;
+          document.getElementById('adminAvatar').innerHTML = (userDoc.data()?.name?.charAt(0) || 'A').toUpperCase();
+          initPanels();
+          loadAllAdminData();
+        }
+      } catch (error) { console.error(error); }
+    });
+
+    document.getElementById('sidebarLogoutBtn').addEventListener('click', async () => { await auth.signOut(); window.location.href = 'user.html'; });
+
+    // ========== SUBSCRIPTION SETTINGS ==========
+    async function loadSubscriptionSettings() {
+      const subDoc = await db.collection('settings').doc('subscription').get();
+      if (subDoc.exists) {
+        document.getElementById('subType').value = subDoc.data().subscriptionType || 'monthly';
+        document.getElementById('subPrice').value = subDoc.data().price || '29';
+        document.getElementById('subDesc').value = subDoc.data().description || '';
+      }
+      document.getElementById('currentSubInfo').innerHTML = `<p>Current Plan: ${subDoc.data()?.subscriptionType || 'Not set'} | Price: $${subDoc.data()?.price || '0'}</p>`;
+    }
+
+    document.getElementById('saveSubscriptionBtn').addEventListener('click', async () => {
+      await db.collection('settings').doc('subscription').set({
+        subscriptionType: document.getElementById('subType').value,
+        price: parseFloat(document.getElementById('subPrice').value),
+        description: document.getElementById('subDesc').value,
+        updatedAt: new Date()
+      });
+      document.getElementById('subSettingsMsg').innerHTML = '<div class="success-msg">✅ Saved!</div>';
+      setTimeout(() => document.getElementById('subSettingsMsg').innerHTML = '', 2000);
+    });
+
+    // ========== CREATE USER ==========
+    document.getElementById('createUserBtn').addEventListener('click', async () => {
+      const name = document.getElementById('newUserName').value;
+      const email = document.getElementById('newUserEmail').value;
+      const password = document.getElementById('newUserPassword').value;
+      const role = document.getElementById('newUserRole').value;
+      const msgDiv = document.getElementById('createUserMsg');
+
+      if (!name || !email || !password) { msgDiv.innerHTML = '<div class="error-msg">❌ Fill all fields</div>'; return; }
+      if (password.length < 6) { msgDiv.innerHTML = '<div class="error-msg">❌ Password min 6 chars</div>'; return; }
+
+      msgDiv.innerHTML = '<div class="success-msg">⏳ Creating user...</div>';
+
+      try {
+        const subDoc = await db.collection('settings').doc('subscription').get();
+        const planType = subDoc.data()?.subscriptionType || 'monthly';
+        let expiryDate = null;
+        if (planType === 'monthly') { expiryDate = new Date(); expiryDate.setDate(expiryDate.getDate() + 30); }
+        else if (planType === 'yearly') { expiryDate = new Date(); expiryDate.setDate(expiryDate.getDate() + 365); }
+
+        const apiKey = firebaseConfig.apiKey;
+        const response = await fetch(`https://identitytoolkit.googleapis.com/v1/accounts:signUp?key=${apiKey}`, {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password, returnSecureToken: true })
+        });
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.error?.message);
+
+        await db.collection('users').doc(data.localId).set({
+          name, email, role, isSubscribed: true, isDisabled: false,
+          subscriptionExpiry: expiryDate, subscriptionPlan: planType,
+          examScores: {}, examResponses: {}, createdAt: new Date(), createdByAdmin: true
+        });
+
+        document.getElementById('credentialsContent').innerHTML = `<div class="generated-credentials"><p><strong>Name:</strong> ${name}</p><p><strong>Email:</strong> ${email}</p><p><strong>Password:</strong> ${password}</p><button class="copy-btn" onclick="copyToClipboard('Email: ${email}\\nPassword: ${password}')">📋 Copy</button></div>`;
+        document.getElementById('credentialsModal').style.display = 'block';
+        msgDiv.innerHTML = '<div class="success-msg">✅ User created!</div>';
+        document.getElementById('newUserName').value = ''; document.getElementById('newUserEmail').value = ''; document.getElementById('newUserPassword').value = '';
+        await loadUsers();
+        setTimeout(() => msgDiv.innerHTML = '', 3000);
+      } catch (error) {
+        msgDiv.innerHTML = `<div class="error-msg">❌ ${error.message}</div>`;
+      }
+    });
+
+    window.copyToClipboard = (text) => { navigator.clipboard.writeText(text); alert('Copied!'); };
+    window.closeModal = (id) => { document.getElementById(id).style.display = 'none'; };
+
+    // ========== VIEW USER EXAM SCORES ==========
+    window.viewUserExamScores = async (userId, userName) => {
+      const userDoc = await db.collection('users').doc(userId).get();
+      const examScores = userDoc.data()?.examScores || {};
+      const examsSnapshot = await db.collection('exams').get();
+      const exams = {};
+      examsSnapshot.forEach(doc => { exams[doc.id] = doc.data(); });
+      
+      if (Object.keys(examScores).length === 0) {
+        document.getElementById('scoresContent').innerHTML = '<p>No exam scores yet.</p>';
+      } else {
+        let html = '<table class="scores-table"><tr><th>Exam</th><th>Score</th><th>Passing</th><th>Status</th></tr>';
+        for (const [examId, score] of Object.entries(examScores)) {
+          const exam = exams[examId];
+          html += `<tr><td>${exam?.title || 'Unknown'}</td><td><strong>${score}%</strong></td><td>${exam?.passingScore || 70}%</td><td class="${score >= (exam?.passingScore || 70) ? 'pass' : 'fail'}">${score >= (exam?.passingScore || 70) ? '✅ PASS' : '❌ FAIL'}</td></tr>`;
+        }
+        html += '</table>';
+        document.getElementById('scoresContent').innerHTML = html;
+      }
+      document.getElementById('scoresStudentName').innerHTML = `📊 ${userName}'s Scores`;
+      document.getElementById('scoresModal').style.display = 'block';
+    };
+
+    // ========== RENEW SUBSCRIPTION ==========
+    window.renewSubscription = async (userId, userName, userEmail) => {
+      const subDoc = await db.collection('settings').doc('subscription').get();
+      const planType = subDoc.data()?.subscriptionType || 'monthly';
+      let newExpiry = null, display = '';
+      if (planType === 'monthly') { newExpiry = new Date(); newExpiry.setDate(newExpiry.getDate() + 30); display = newExpiry.toLocaleDateString(); }
+      else if (planType === 'yearly') { newExpiry = new Date(); newExpiry.setDate(newExpiry.getDate() + 365); display = newExpiry.toLocaleDateString(); }
+      else { display = 'Never (Lifetime)'; }
+      
+      if (confirm(`Renew ${userName || userEmail}?\nPlan: ${planType}\nExpires: ${display}`)) {
+        await db.collection('users').doc(userId).update({ isSubscribed: true, subscriptionExpiry: newExpiry, subscriptionPlan: planType, lastRenewedAt: new Date() });
+        document.getElementById('renewContent').innerHTML = `<div class="generated-credentials"><p>✅ Renewed! New expiry: ${display}</p></div>`;
+        document.getElementById('renewModal').style.display = 'block';
+        await loadUsers();
+      }
+    };
+
+    // ========== ENABLE/DISABLE ACCOUNT ==========
+    window.toggleDisableAccount = async (userId, currentStatus) => {
+      const newStatus = !currentStatus;
+      if (confirm(newStatus ? 'Disable this account?' : 'Enable this account?')) {
+        await db.collection('users').doc(userId).update({ isDisabled: newStatus });
+        alert(`Account ${newStatus ? 'disabled' : 'enabled'}`);
+        await loadUsers();
+      }
+    };
+
+    // ========== RESET USER PASSWORD ==========
+    window.resetUserPassword = async (userId, userEmail) => {
+      if (confirm(`Send password reset email to ${userEmail}?`)) {
+        const apiKey = firebaseConfig.apiKey;
+        const response = await fetch(`https://identitytoolkit.googleapis.com/v1/accounts:sendOobCode?key=${apiKey}`, {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ requestType: "PASSWORD_RESET", email: userEmail })
+        });
+        const data = await response.json();
+        if (response.ok) {
+          document.getElementById('resetPwdContent').innerHTML = `<div class="generated-credentials"><p>✅ Reset email sent to ${userEmail}</p></div>`;
+          document.getElementById('resetPwdModal').style.display = 'block';
+        } else { alert('Error: ' + data.error?.message); }
+      }
+    };
+
+    // ========== LOAD USERS ==========
+    async function loadUsers() {
+      const snapshot = await db.collection('users').get();
+      allUsers = [];
+      for (const doc of snapshot.docs) {
+        const user = doc.data();
+        if (user.role === 'admin') continue;
+        user.id = doc.id;
+        allUsers.push(user);
+      }
+      renderUsers(allUsers);
+    }
+    
+    function renderUsers(users) {
+      const container = document.getElementById('usersList');
+      if (users.length === 0) { container.innerHTML = '<p class="no-results">No users found</p>'; return; }
+      container.innerHTML = '';
+      for (const user of users) {
+        const isDisabled = user.isDisabled === true;
+        let expiryDisplay = 'Not set', isExpired = false;
+        if (user.subscriptionExpiry && !isDisabled) {
+          try {
+            let date = user.subscriptionExpiry.toDate ? user.subscriptionExpiry.toDate() : new Date(user.subscriptionExpiry);
+            expiryDisplay = date.toLocaleDateString();
+            isExpired = new Date() > date;
+          } catch(e) {}
+        }
+        if (user.subscriptionPlan === 'lifetime') { expiryDisplay = 'Never (Lifetime)'; isExpired = false; }
+        
+        let accountStatus = '';
+        let accountStatusClass = '';
+        if (isDisabled) { accountStatus = '🚫 Disabled'; accountStatusClass = 'disabled-account'; }
+        else if (isExpired) { accountStatus = '⏰ Expired'; }
+        else if (user.isSubscribed) { accountStatus = '✅ Active'; }
+        else { accountStatus = '⚠️ Inactive'; }
+        
+        container.innerHTML += `
+          <div class="user-item ${accountStatusClass}">
+            <div class="user-info">
+              <strong>${user.name || user.email} ${isDisabled ? '<span class="disabled-badge">DISABLED</span>' : ''}</strong><br>
+              📧 ${user.email}<br>
+              💳 Subscription: ${accountStatus}<br>
+              📅 Expires: ${isDisabled ? 'N/A' : expiryDisplay}<br>
+              📋 Plan: ${user.subscriptionPlan || 'Not set'}
+            </div>
+            <div class="user-actions">
+              <button onclick="viewUserExamScores('${user.id}', '${(user.name || user.email).replace(/'/g, "\\'")}')" class="view-scores-btn" style="padding:5px 12px; font-size:12px;">📊 Scores</button>
+              <button onclick="renewSubscription('${user.id}', '${(user.name || user.email).replace(/'/g, "\\'")}', '${user.email}')" class="renew-btn" style="padding:5px 12px; font-size:12px;">🔄 Renew</button>
+              ${!isDisabled ? `<button onclick="toggleDisableAccount('${user.id}', false)" class="disable-btn" style="padding:5px 12px; font-size:12px;">🚫 Disable</button>` : `<button onclick="toggleDisableAccount('${user.id}', true)" class="enable-btn" style="padding:5px 12px; font-size:12px;">✅ Enable</button>`}
+              <button onclick="resetUserPassword('${user.id}', '${user.email}')" class="reset-pwd-btn" style="padding:5px 12px; font-size:12px;">🔐 Reset</button>
+              <button onclick="deleteUser('${user.id}')" class="delete-btn" style="padding:5px 12px; font-size:12px;">🗑️ Delete</button>
+            </div>
+          </div>
+        `;
+      }
+    }
+    
+    window.searchUsers = () => {
+      const term = document.getElementById('searchUsers').value.toLowerCase();
+      if (!term) { renderUsers(allUsers); return; }
+      const filtered = allUsers.filter(u => (u.name && u.name.toLowerCase().includes(term)) || (u.email && u.email.toLowerCase().includes(term)));
+      renderUsers(filtered);
+    };
+    window.clearUserSearch = () => { document.getElementById('searchUsers').value = ''; renderUsers(allUsers); };
+    window.deleteUser = async (userId) => { if (confirm('Delete this user?')) { await db.collection('users').doc(userId).delete(); await loadUsers(); } };
+
+    // ========== ASSIGNMENT FUNCTIONS ==========
+    document.getElementById('createAssignmentBtn').addEventListener('click', async () => {
+      const title = document.getElementById('assignTitle').value;
+      if (!title) { document.getElementById('assignMsg').innerHTML = '<div class="error-msg">❌ Enter title</div>'; return; }
+      const imgFile = document.getElementById('assignImage').files[0];
+      let imgBase64 = null;
+      if (imgFile) {
+        if (imgFile.size > 5 * 1024 * 1024) { document.getElementById('assignMsg').innerHTML = '<div class="error-msg">❌ Image max 5MB</div>'; return; }
+        imgBase64 = await new Promise(r => { const fr = new FileReader(); fr.onload = () => r(fr.result); fr.readAsDataURL(imgFile); });
+      }
+      await db.collection('assignments').add({ title, description: document.getElementById('assignDesc').value, dueDate: document.getElementById('assignDue').value ? new Date(document.getElementById('assignDue').value) : null, imageBase64: imgBase64, createdAt: new Date() });
+      document.getElementById('assignMsg').innerHTML = '<div class="success-msg">✅ Assignment created!</div>';
+      document.getElementById('assignTitle').value = ''; document.getElementById('assignDesc').value = ''; document.getElementById('assignDue').value = ''; document.getElementById('assignImage').value = ''; document.getElementById('imagePreview').innerHTML = '';
+      await loadAssignments();
+      setTimeout(() => document.getElementById('assignMsg').innerHTML = '', 3000);
+    });
+    document.getElementById('assignImage').addEventListener('change', (e) => { if (e.target.files[0]) { const fr = new FileReader(); fr.onload = (ev) => document.getElementById('imagePreview').innerHTML = `<img src="${ev.target.result}" class="preview-image">`; fr.readAsDataURL(e.target.files[0]); } });
+
+    async function loadAssignments() { 
+      const snap = await db.collection('assignments').orderBy('createdAt', 'desc').get(); 
+      allAssignments = [];
+      snap.forEach(d => { allAssignments.push({ id: d.id, title: d.data().title, description: d.data().description }); });
+      renderAssignments(allAssignments);
+    }
+    
+    function renderAssignments(assignments) {
+      const c = document.getElementById('assignmentsList'); 
+      if (assignments.length === 0) { c.innerHTML = '<p class="no-results">No assignments found</p>'; return; }
+      c.innerHTML = ''; 
+      assignments.forEach(d => { 
+        c.innerHTML += `<div class="assignment-item"><div><strong>📌 ${d.title}</strong><br><small>${d.description?.substring(0, 50) || ''}</small></div><button class="delete-btn" onclick="deleteAssignment('${d.id}')">Delete</button></div>`; 
+      }); 
+    }
+    
+    window.searchAssignments = () => {
+      const term = document.getElementById('searchAssignments').value.toLowerCase();
+      if (!term) { renderAssignments(allAssignments); return; }
+      const filtered = allAssignments.filter(a => a.title && a.title.toLowerCase().includes(term));
+      renderAssignments(filtered);
+    };
+    window.clearAssignmentSearch = () => { document.getElementById('searchAssignments').value = ''; renderAssignments(allAssignments); };
+    window.deleteAssignment = async (id) => { if (confirm('Delete?')) { await db.collection('assignments').doc(id).delete(); await loadAssignments(); } };
+
+    // ========== EXAM FUNCTIONS ==========
+    function renderQuestions() {
+      const container = document.getElementById('questionsContainer');
+      container.innerHTML = '';
+      questions.forEach((q, idx) => {
+        container.innerHTML += `<div class="question-card"><strong>Q${idx+1}:</strong><input type="text" id="q-text-${idx}" value="${q.text||''}" placeholder="Question"><div class="question-options"><label>A: <input type="text" id="q-optA-${idx}" value="${q.options?.A||''}"></label><label>B: <input type="text" id="q-optB-${idx}" value="${q.options?.B||''}"></label><label>C: <input type="text" id="q-optC-${idx}" value="${q.options?.C||''}"></label><label>D: <input type="text" id="q-optD-${idx}" value="${q.options?.D||''}"></label></div><select id="q-correct-${idx}"><option value="">Correct</option><option ${q.correctAnswer==='A'?'selected':''} value="A">A</option><option ${q.correctAnswer==='B'?'selected':''} value="B">B</option><option ${q.correctAnswer==='C'?'selected':''} value="C">C</option><option ${q.correctAnswer==='D'?'selected':''} value="D">D</option></select><button class="delete-btn" onclick="removeQuestion(${idx})">Remove</button></div>`;
+      });
+      setTimeout(() => { questions.forEach((_,i)=>{ 
+        const getEl=(id)=>document.getElementById(`${id}-${i}`);
+        if(getEl('q-text')) getEl('q-text').addEventListener('change',e=>questions[i].text=e.target.value);
+        ['optA','optB','optC','optD'].forEach((o,idx)=>{ if(getEl(`q-${o}`)) getEl(`q-${o}`).addEventListener('change',e=>questions[i].options[String.fromCharCode(65+idx)]=e.target.value); });
+        if(getEl('q-correct')) getEl('q-correct').addEventListener('change',e=>questions[i].correctAnswer=e.target.value);
+      }); },100);
+    }
+    window.removeQuestion = (i) => { questions.splice(i,1); renderQuestions(); };
+    document.getElementById('addQuestionBtn').addEventListener('click', () => { questions.push({ text:'', options:{ A:'',B:'',C:'',D:'' }, correctAnswer:'' }); renderQuestions(); });
+
+    document.getElementById('createExamBtn').addEventListener('click', async () => {
+      const title = document.getElementById('examTitle').value;
+      if(!title){ document.getElementById('examMsg').innerHTML='<div class="error-msg">Enter title</div>'; return; }
+      const timeLimit = parseInt(document.getElementById('examTimeLimit').value) || 0;
+      const passingScore = parseInt(document.getElementById('examPassingScore').value) || 70;
+      
+      const finalQs = [];
+      for(let i=0;i<questions.length;i++){
+        const text = document.getElementById(`q-text-${i}`)?.value||'';
+        const opts = { A:document.getElementById(`q-optA-${i}`)?.value||'', B:document.getElementById(`q-optB-${i}`)?.value||'', C:document.getElementById(`q-optC-${i}`)?.value||'', D:document.getElementById(`q-optD-${i}`)?.value||'' };
+        const correct = document.getElementById(`q-correct-${i}`)?.value||'';
+        if(text && opts.A && opts.B && opts.C && opts.D && correct) finalQs.push({ text, options:opts, correctAnswer:correct });
+      }
+      if(finalQs.length===0){ document.getElementById('examMsg').innerHTML='<div class="error-msg">Add questions</div>'; return; }
+      await db.collection('exams').add({ title, description:document.getElementById('examDesc').value, timeLimit, passingScore, questions:finalQs, createdAt:new Date(), type:'builtin' });
+      document.getElementById('examMsg').innerHTML='<div class="success-msg">✅ Exam created!</div>';
+      document.getElementById('examTitle').value=''; document.getElementById('examDesc').value=''; document.getElementById('examTimeLimit').value='30'; document.getElementById('examPassingScore').value='70';
+      questions=[]; renderQuestions();
+      await loadExams();
+      setTimeout(()=>document.getElementById('examMsg').innerHTML='',3000);
+    });
+
+    async function loadExams() { 
+      const snap = await db.collection('exams').orderBy('createdAt','desc').get(); 
+      allExams = [];
+      snap.forEach(d => { allExams.push({ id: d.id, title: d.data().title, description: d.data().description, timeLimit: d.data().timeLimit, passingScore: d.data().passingScore, questionsCount: d.data().questions?.length || 0 }); });
+      renderExams(allExams);
+    }
+    
+    function renderExams(exams) {
+      const c = document.getElementById('examsList'); 
+      if (exams.length === 0) { c.innerHTML = '<p class="no-results">No exams found</p>'; return; }
+      c.innerHTML = ''; 
+      exams.forEach(exam => { 
+        c.innerHTML+=`<div class="exam-item"><div><strong>📝 ${exam.title}</strong><br><small>⏰ Time: ${exam.timeLimit ? exam.timeLimit + ' min' : 'No limit'} | ✅ Passing: ${exam.passingScore || 70}% | 📋 ${exam.questionsCount} questions</small></div><button class="delete-btn" onclick="deleteExam('${exam.id}')">Delete</button></div>`; 
+      }); 
+    }
+    
+    window.searchExams = () => {
+      const term = document.getElementById('searchExams').value.toLowerCase();
+      if (!term) { renderExams(allExams); return; }
+      const filtered = allExams.filter(e => e.title && e.title.toLowerCase().includes(term));
+      renderExams(filtered);
+    };
+    window.clearExamSearch = () => { document.getElementById('searchExams').value = ''; renderExams(allExams); };
+    window.deleteExam = async (id) => { if(confirm('Delete exam?')){ await db.collection('exams').doc(id).delete(); await loadExams(); } };
+
+    // ========== SUBMISSIONS FUNCTIONS ==========
+    async function loadSubmissions() { 
+      const snap = await db.collection('submissions').orderBy('submittedAt','desc').get(); 
+      allSubmissions = [];
+      for (const doc of snap.docs) { 
+        const sub = doc.data();
+        sub.id = doc.id;
+        let userName = 'Unknown', assignmentTitle = 'Unknown';
+        try { 
+          const u = await db.collection('users').doc(sub.userId).get(); 
+          if(u.exists) userName = u.data().name || u.data().email;
+          const a = await db.collection('assignments').doc(sub.assignmentId).get(); 
+          if(a.exists) assignmentTitle = a.data().title;
+        } catch(e){} 
+        sub.userName = userName;
+        sub.assignmentTitle = assignmentTitle;
+        allSubmissions.push(sub);
+      }
+      renderSubmissions(allSubmissions);
+    }
+    
+    function renderSubmissions(submissions) {
+      const c = document.getElementById('submissionsList'); 
+      if (submissions.length === 0) { c.innerHTML = '<p class="no-results">No submissions found</p>'; return; }
+      c.innerHTML = ''; 
+      for(const sub of submissions){ 
+        const date = sub.submittedAt?.toDate ? sub.submittedAt.toDate() : new Date(); 
+        c.innerHTML+=`<div class="submission-item"><div><strong>👤 ${sub.userName}</strong><br><strong>📌 ${sub.assignmentTitle}</strong><br><small>📅 ${date.toLocaleString()}</small><div style="margin-top:10px;"><input type="number" id="grade-${sub.id}" placeholder="Grade" class="grade-input" value="${sub.grade||''}"><input type="text" id="feedback-${sub.id}" placeholder="Feedback" class="feedback-input" value="${sub.feedback||''}"><button onclick="gradeSubmission('${sub.id}')">Save</button></div></div><button onclick="viewSubmission('${sub.fileBase64||''}','${sub.fileName||'file'}')" style="background:#3b82f6; padding:6px 14px;">👁️ View</button></div>`; 
+      } 
+    }
+    
+    window.searchSubmissions = () => {
+      const term = document.getElementById('searchSubmissions').value.toLowerCase();
+      if (!term) { renderSubmissions(allSubmissions); return; }
+      const filtered = allSubmissions.filter(s => (s.userName && s.userName.toLowerCase().includes(term)) || (s.assignmentTitle && s.assignmentTitle.toLowerCase().includes(term)));
+      renderSubmissions(filtered);
+    };
+    window.clearSubmissionSearch = () => { document.getElementById('searchSubmissions').value = ''; renderSubmissions(allSubmissions); };
+    window.viewSubmission = (data,name) => { alert('View submission: ' + name); };
+    window.gradeSubmission = async (id) => { 
+      const grade=document.getElementById(`grade-${id}`).value; 
+      if(!grade){ alert('Enter grade'); return; } 
+      await db.collection('submissions').doc(id).update({ grade:parseInt(grade), feedback:document.getElementById(`feedback-${id}`).value, gradedAt:new Date() }); 
+      alert('Saved!'); 
+      await loadSubmissions(); 
+    };
+
+    // ========== CONTACT MESSAGES FUNCTIONS ==========
+    async function loadMessages() {
+      const snap = await db.collection('contactMessages').orderBy('createdAt', 'desc').get();
+      allMessages = [];
+      snap.forEach(doc => {
+        const msg = doc.data();
+        msg.id = doc.id;
+        allMessages.push(msg);
+      });
+      renderMessages(allMessages);
+    }
+    
+    function renderMessages(messages) {
+      const c = document.getElementById('messagesList');
+      if (messages.length === 0) { c.innerHTML = '<p class="no-results">No messages yet</p>'; return; }
+      c.innerHTML = '';
+      for (const msg of messages) {
+        const date = msg.createdAt?.toDate ? msg.createdAt.toDate() : new Date();
+        const isUnread = msg.status !== 'read';
+        c.innerHTML += `
+          <div class="message-item ${isUnread ? 'message-unread' : 'message-read'}">
+            <div style="flex:1;">
+              <strong>👤 ${msg.name}</strong><br>
+              📧 ${msg.email}<br>
+              💬 ${msg.message}<br>
+              <small>📅 ${date.toLocaleString()}</small>
+            </div>
+            <div>
+              ${isUnread ? `<button onclick="markMessageRead('${msg.id}')" style="background:#10b981; padding:6px 12px; font-size:12px;">✓ Mark as Read</button>` : '<span style="color:#10b981;">✓ Read</span>'}
+              <button onclick="deleteMessage('${msg.id}')" class="delete-btn" style="padding:6px 12px; font-size:12px; margin-left:8px;">🗑️ Delete</button>
+            </div>
+          </div>
+        `;
+      }
+    }
+    
+    window.searchMessages = () => {
+      const term = document.getElementById('searchMessages').value.toLowerCase();
+      if (!term) { renderMessages(allMessages); return; }
+      const filtered = allMessages.filter(m => 
+        (m.name && m.name.toLowerCase().includes(term)) || 
+        (m.email && m.email.toLowerCase().includes(term)) ||
+        (m.message && m.message.toLowerCase().includes(term))
+      );
+      renderMessages(filtered);
+    };
+    window.clearMessageSearch = () => { document.getElementById('searchMessages').value = ''; renderMessages(allMessages); };
+    
+    window.markMessageRead = async (id) => {
+      await db.collection('contactMessages').doc(id).update({ status: 'read', readAt: new Date() });
+      await loadMessages();
+    };
+    
+    window.deleteMessage = async (id) => {
+      if (confirm('Delete this message?')) {
+        await db.collection('contactMessages').doc(id).delete();
+        await loadMessages();
+      }
+    };
+
+    // ========== SETTINGS ==========
+    async function loadSettings() { 
+      const admin = await db.collection('settings').doc('adminContact').get(); 
+      const whats = await db.collection('settings').doc('whatsappGroup').get(); 
+      if(admin.exists) document.getElementById('settingsAdminEmail').value=admin.data().email||''; 
+      if(whats.exists) document.getElementById('whatsappLink').value=whats.data().link||''; 
+    }
+    document.getElementById('updateEmailBtn').addEventListener('click',async()=>{ await db.collection('settings').doc('adminContact').set({ email:document.getElementById('settingsAdminEmail').value }); alert('Saved!'); });
+    document.getElementById('updateWhatsappBtn').addEventListener('click',async()=>{ await db.collection('settings').doc('whatsappGroup').set({ link:document.getElementById('whatsappLink').value }); alert('Saved!'); });
+
+    window.onclick = (e) => { if(e.target.classList.contains('modal')) e.target.style.display='none'; };
+
+    async function loadAllAdminData() { 
+      await loadSubscriptionSettings();
+      await loadAssignments(); 
+      await loadExams(); 
+      await loadSubmissions(); 
+      await loadUsers(); 
+      await loadMessages();
+      await loadSettings(); 
+    }
+  </script>
+</body>
+</html>
